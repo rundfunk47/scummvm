@@ -790,7 +790,7 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 
 	// Need some extra bytes around when using 2xSaI
 	_tmpscreen = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.screenWidth + 3, _videoMode.screenHeight + 3,
-						16,
+						32,
 						_hwscreen->format->Rmask,
 						_hwscreen->format->Gmask,
 						_hwscreen->format->Bmask,
@@ -800,7 +800,7 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 		error("allocating _tmpscreen failed");
 
 	_overlayscreen = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.overlayWidth, _videoMode.overlayHeight,
-						16,
+						32,
 						_hwscreen->format->Rmask,
 						_hwscreen->format->Gmask,
 						_hwscreen->format->Bmask,
@@ -1658,7 +1658,7 @@ void SurfaceSdlGraphicsManager::copyRectToOverlay(const void *buf, int pitch, in
 
 	byte *dst = (byte *)_overlayscreen->pixels + y * _overlayscreen->pitch + x * 2;
 	do {
-		memcpy(dst, src, w * 2);
+		memcpy(dst + x, src, w * 4);
 		dst += _overlayscreen->pitch;
 		src += pitch;
 	} while (--h);
