@@ -1656,9 +1656,9 @@ void SurfaceSdlGraphicsManager::copyRectToOverlay(const void *buf, int pitch, in
 	if (SDL_LockSurface(_overlayscreen) == -1)
 		error("SDL_LockSurface failed: %s", SDL_GetError());
 
-	byte *dst = (byte *)_overlayscreen->pixels + y * _overlayscreen->pitch + x * 4;
+	byte *dst = (byte *)_overlayscreen->pixels + y * _overlayscreen->pitch + x * _overlayscreen->format->BytesPerPixel;
 	do {
-		memcpy(dst, src, w * 4);
+		memcpy(dst, src, w * _overlayscreen->format->BytesPerPixel);
 		dst += _overlayscreen->pitch;
 		src += pitch;
 	} while (--h);
