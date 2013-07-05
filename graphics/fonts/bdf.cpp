@@ -165,6 +165,8 @@ void BdfFont::drawChar(Surface *dst, byte chr, const int tx, const int ty, const
 		drawCharIntern<byte>(ptr, dst->pitch, src, height, originalWidth, xStart, xEnd, color);
 	else if (dst->format.bytesPerPixel == 2)
 		drawCharIntern<uint16>(ptr, dst->pitch, src, height, originalWidth, xStart, xEnd, color);
+	else if (dst->format.bytesPerPixel == 4)
+		drawCharIntern<uint32>(ptr, dst->pitch, src, height, originalWidth, xStart, xEnd, color);
 }
 
 namespace {
