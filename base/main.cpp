@@ -256,6 +256,14 @@ static void setupGraphics(OSystem &system) {
 			system.setFeatureState(OSystem::kFeatureAspectRatioCorrection, ConfMan.getBool("aspect_ratio"));
 		if (ConfMan.hasKey("fullscreen"))
 			system.setFeatureState(OSystem::kFeatureFullscreenMode, ConfMan.getBool("fullscreen"));
+
+		Common::String renderer = ConfMan.get("gui_renderer");
+
+		if (renderer == "aa_32bpp" || renderer == "normal_32bpp")
+			system.setFeatureState(OSystem::kFeature32bitGUI, true);
+		else
+			system.setFeatureState(OSystem::kFeature32bitGUI, false);
+
 	system.endGFXTransaction();
 
 	// When starting up launcher for the first time, the user might have specified
@@ -494,6 +502,7 @@ extern "C" int scummvm_main(int argc, const char * const argv[]) {
 
 		// reset the graphics to default
 		setupGraphics(system);
+		
 		launcherDialog();
 	}
 	PluginManager::instance().unloadAllPlugins();

@@ -34,6 +34,8 @@
 
 #include "backends/platform/sdl/sdl-sys.h"
 
+#include "graphics/cursorman.h"
+
 #ifndef RELEASE_BUILD
 // Define this to allow for focus rectangle debugging
 #define USE_SDL_DEBUG_FOCUSRECT
@@ -94,6 +96,7 @@ public:
 	virtual void resetGraphicsScale();
 #ifdef USE_RGB_COLOR
 	virtual Graphics::PixelFormat getScreenFormat() const { return _screenFormat; }
+	virtual bool setScreenFormat(Graphics::PixelFormat format);
 	virtual Common::List<Graphics::PixelFormat> getSupportedFormats() const;
 #endif
 	virtual void initSize(uint w, uint h, const Graphics::PixelFormat *format = NULL);
@@ -111,6 +114,8 @@ protected:
 	virtual void grabPalette(byte *colors, uint start, uint num);
 
 public:
+	virtual bool loadGFXMode();
+
 	virtual void copyRectToScreen(const void *buf, int pitch, int x, int y, int w, int h);
 	virtual Graphics::Surface *lockScreen();
 	virtual void unlockScreen();
@@ -122,7 +127,7 @@ public:
 
 	virtual void showOverlay();
 	virtual void hideOverlay();
-	virtual Graphics::PixelFormat getOverlayFormat() const { return _overlayFormat; }
+	virtual Graphics::PixelFormat getOverlayFormat() const { return _preferredOverlayFormat; }
 	virtual void clearOverlay();
 	virtual void grabOverlay(void *buf, int pitch);
 	virtual void copyRectToOverlay(const void *buf, int pitch, int x, int y, int w, int h);
@@ -162,12 +167,18 @@ protected:
 		kOSDInitialAlpha = 80			/** < Initial alpha level, in percent */
 	};
 #endif
-
 	/** Hardware screen */
 	SDL_Surface *_hwscreen;
 
+	/** Game "hardware" screen */
+	SDL_Surface *_gamehwscreen;
+
 	/** Unseen game screen */
 	SDL_Surface *_screen;
+
+	/** Background screen, used by clearOverlay and blitted to overlay if not empty*/
+	SDL_Surface *_overlayBackground;
+
 #ifdef USE_RGB_COLOR
 	Graphics::PixelFormat _screenFormat;
 	Graphics::PixelFormat _cursorFormat;
@@ -178,6 +189,11 @@ protected:
 	 * This method is invoked by loadGFXMode().
 	 */
 	void detectSupportedFormats();
+
+	bool _32bitGUI;
+
+	Graphics::PixelFormat _preferredFormat;
+	Graphics::PixelFormat _preferredOverlayFormat;
 #endif
 
 	/** Temporary screen (for scalers) */
@@ -320,7 +336,6 @@ protected:
 
 	virtual void internUpdateScreen();
 
-	virtual bool loadGFXMode();
 	virtual void unloadGFXMode();
 	virtual bool hotswapGFXMode();
 

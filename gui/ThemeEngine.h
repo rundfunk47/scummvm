@@ -243,7 +243,9 @@ public:
 	enum GraphicsMode {
 		kGfxDisabled = 0,   ///< No GFX
 		kGfxStandard16bit,  ///< 2BPP with the standard (aliased) renderer.
-		kGfxAntialias16bit  ///< 2BPP with the optimized AA renderer.
+		kGfxAntialias16bit, ///< 2BPP with the optimized AA renderer.
+		kGfxStandard32bit,  ///< 4BPP with the standard (aliased) renderer.
+		kGfxAntialias32bit  ///< 4BPP with the optimized AA renderer.
 	};
 
 	/** Constant value to expand dirty rectangles, to make sure they are fully copied */

@@ -336,8 +336,10 @@ ThemeEngine::~ThemeEngine() {
 const ThemeEngine::Renderer ThemeEngine::_rendererModes[] = {
 	{ _s("Disabled GFX"), _sc("Disabled GFX", "lowres"), "none", kGfxDisabled },
 	{ _s("Standard Renderer (16bpp)"), _s("Standard (16bpp)"), "normal_16bpp", kGfxStandard16bit },
+	{ _s("Standard Renderer (32bpp)"), _s("Standard (32bpp)"), "normal_32bpp", kGfxStandard32bit },
 #ifndef DISABLE_FANCY_THEMES
-	{ _s("Antialiased Renderer (16bpp)"), _s("Antialiased (16bpp)"), "aa_16bpp", kGfxAntialias16bit }
+	{ _s("Antialiased Renderer (16bpp)"), _s("Antialiased (16bpp)"), "aa_16bpp", kGfxAntialias16bit },
+	{ _s("Antialiased Renderer (32bpp)"), _s("Antialiased (32bpp)"), "aa_32bpp", kGfxAntialias32bit }
 #endif
 };
 
@@ -498,6 +500,12 @@ void ThemeEngine::setGraphicsMode(GraphicsMode mode) {
 #endif
 		_bytesPerPixel = sizeof(uint16);
 		break;
+	case kGfxStandard32bit:
+#ifndef DISABLE_FANCY_THEMES
+	case kGfxAntialias32bit:
+#endif
+		_bytesPerPixel = sizeof(uint32);
+		break;
 
 	default:
 		error("Invalid graphics mode");
@@ -515,6 +523,8 @@ void ThemeEngine::setGraphicsMode(GraphicsMode mode) {
 	delete _vectorRenderer;
 	_vectorRenderer = Graphics::createRenderer(mode);
 	_vectorRenderer->setSurface(&_screen);
+
+
 }
 
 void WidgetDrawData::calcBackgroundOffset() {
@@ -1318,22 +1328,31 @@ bool ThemeEngine::createCursor(const Common::String &filename, int hotspotX, int
 	memset(_cursor, 0xFF, sizeof(byte) * _cursorWidth * _cursorHeight);
 
 	// the transparent color is 0xFF00FF
-	const int colTransparent = _overlayFormat.RGBToColor(0xFF, 0, 0xFF);
+	const uint32 colTransparent = _overlayFormat.RGBToColor(0xFF, 0, 0xFF);
 
 	// Now, scan the bitmap. We have to convert it from 16 bit color mode
 	// to 8 bit mode, and have to create a suitable palette on the fly.
 	uint colorsFound = 0;
 	Common::HashMap<int, int> colorToIndex;
-	const OverlayColor *src = (const OverlayColor *)cursor->pixels;
+	const byte *src = (const byte *)cursor->pixels;
 	for (uint y = 0; y < _cursorHeight; ++y) {
 		for (uint x = 0; x < _cursorWidth; ++x) {
+			uint32 color = colTransparent;
 			byte r, g, b;
 
+			if (cursor->format.bytesPerPixel == 2) {
+				color = READ_UINT16(src);
+			} else if (cursor->format.bytesPerPixel == 4) {
+				color = READ_UINT32(src);
+			}
+
+			src += cursor->format.bytesPerPixel;
+
 			// Skip transparency
-			if (src[x] == colTransparent)
+			if (color == colTransparent)
 				continue;
 
-			_overlayFormat.colorToRGB(src[x], r, g, b);
+			cursor->format.colorToRGB(color, r, g, b);
 			const int col = (r << 16) | (g << 8) | b;
 
 			// If there is no entry yet for this color in the palette: Add one
@@ -1355,7 +1374,6 @@ bool ThemeEngine::createCursor(const Common::String &filename, int hotspotX, int
 			const int index = colorToIndex[col];
 			_cursor[y * _cursorWidth + x] = index;
 		}
-		src += _cursorWidth;
 	}
 
 	_useCursor = true;
