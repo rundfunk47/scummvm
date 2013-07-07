@@ -732,6 +732,16 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 	_videoMode.hardwareHeight = _videoMode.overlayHeight;
 #endif
 
+	Common::String renderer = ConfMan.get("gui_renderer");
+
+	if (renderer == "normal_16bpp" || renderer == "aa_16bpp") {
+		_videoMode.bitsPerPixel = 16;
+	} else if (renderer == "normal_32bpp" || renderer == "aa_32bpp") {
+		_videoMode.bitsPerPixel = 32;
+	} else {
+		error("unknown renderer");
+	}
+
 	//
 	// Create the surface that contains the 8 bit game data
 	//
@@ -772,6 +782,8 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 	detectSupportedFormats();
 #endif
 
+	_videoMode.mode;
+
 	if (_hwscreen == NULL) {
 		// DON'T use error(), as this tries to bring up the debug
 		// console, which WON'T WORK now that _hwscreen is hosed.
@@ -784,13 +796,15 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 		}
 	}
 
+	_hwscreen;
+
 	//
 	// Create the surface used for the graphics in 16 bit before scaling, and also the overlay
 	//
 
 	// Need some extra bytes around when using 2xSaI
 	_tmpscreen = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.screenWidth + 3, _videoMode.screenHeight + 3,
-						32,
+						_videoMode.bitsPerPixel,
 						_hwscreen->format->Rmask,
 						_hwscreen->format->Gmask,
 						_hwscreen->format->Bmask,
@@ -800,7 +814,7 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 		error("allocating _tmpscreen failed");
 
 	_overlayscreen = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.overlayWidth, _videoMode.overlayHeight,
-						32,
+						_videoMode.bitsPerPixel,
 						_hwscreen->format->Rmask,
 						_hwscreen->format->Gmask,
 						_hwscreen->format->Bmask,
@@ -835,7 +849,7 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 	_osdSurface = SDL_CreateRGBSurface(SDL_SWSURFACE | SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA,
 						_hwscreen->w,
 						_hwscreen->h,
-						32,
+						_videoMode.bitsPerPixel,
 						_hwscreen->format->Rmask,
 						_hwscreen->format->Gmask,
 						_hwscreen->format->Bmask,

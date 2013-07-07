@@ -216,6 +216,8 @@ protected:
 		int mode;
 		int scaleFactor;
 
+		int bitsPerPixel;
+
 		int screenWidth, screenHeight;
 		int overlayWidth, overlayHeight;
 		int hardwareWidth, hardwareHeight;
