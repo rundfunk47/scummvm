@@ -336,8 +336,10 @@ ThemeEngine::~ThemeEngine() {
 const ThemeEngine::Renderer ThemeEngine::_rendererModes[] = {
 	{ _s("Disabled GFX"), _sc("Disabled GFX", "lowres"), "none", kGfxDisabled },
 	{ _s("Standard Renderer (16bpp)"), _s("Standard (16bpp)"), "normal_16bpp", kGfxStandard16bit },
+	{ _s("Standard Renderer (32bpp)"), _s("Standard (32bpp)"), "normal_32bpp", kGfxStandard32bit },
 #ifndef DISABLE_FANCY_THEMES
-	{ _s("Antialiased Renderer (16bpp)"), _s("Antialiased (16bpp)"), "aa_16bpp", kGfxAntialias16bit }
+	{ _s("Antialiased Renderer (16bpp)"), _s("Antialiased (16bpp)"), "aa_16bpp", kGfxAntialias16bit },
+	{ _s("Antialiased Renderer (32bpp)"), _s("Antialiased (32bpp)"), "aa_32bpp", kGfxAntialias32bit }
 #endif
 };
 
@@ -498,6 +500,12 @@ void ThemeEngine::setGraphicsMode(GraphicsMode mode) {
 #endif
 		_bytesPerPixel = sizeof(uint16);
 		break;
+	case kGfxStandard32bit:
+#ifndef DISABLE_FANCY_THEMES
+	case kGfxAntialias32bit:
+#endif
+		_bytesPerPixel = sizeof(uint32);
+		break;
 
 	default:
 		error("Invalid graphics mode");
@@ -515,6 +523,8 @@ void ThemeEngine::setGraphicsMode(GraphicsMode mode) {
 	delete _vectorRenderer;
 	_vectorRenderer = Graphics::createRenderer(mode);
 	_vectorRenderer->setSurface(&_screen);
+
+
 }
 
 void WidgetDrawData::calcBackgroundOffset() {
