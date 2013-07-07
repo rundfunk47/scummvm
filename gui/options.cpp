@@ -1343,8 +1343,10 @@ void GlobalOptionsDialog::close() {
 		if (!ConfMan.get("gui_renderer").equalsIgnoreCase(cfg)) {
 			// FIXME: Actually, any changes (including the theme change) should
 			// only become active *after* the options dialog has closed.
-			g_gui.loadNewTheme(g_gui.theme()->getThemeId(), selected);
 			ConfMan.set("gui_renderer", cfg, _domain);
+
+			MessageDialog error(_("You have to restart ScummVM before your changes will take effect."));
+			error.runModal();
 		}
 #ifdef USE_TRANSLATION
 		Common::String oldLang = ConfMan.get("gui_language");
