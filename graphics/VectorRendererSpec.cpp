@@ -380,33 +380,38 @@ gradientFill(PixelType *ptr, int width, int x, int y) {
 	while (_gradIndexes[curGrad + 1] <= y)
 		curGrad++;
 
-	stripSize = _gradIndexes[curGrad + 1] - _gradIndexes[curGrad];
+	if (sizeof(PixelType) == 2) // Only apply dithering to 16-bits surfaces
+	{
+		stripSize = _gradIndexes[curGrad + 1] - _gradIndexes[curGrad];
 
-	int grad = (((y - _gradIndexes[curGrad]) % stripSize) << 2) / stripSize;
+		int grad = (((y - _gradIndexes[curGrad]) % stripSize) << 2) / stripSize;
 
-	// Dithering:
-	//   +--+ +--+ +--+ +--+
-	//   |  | |  | | *| | *|
-	//   |  | | *| |* | |**|
-	//   +--+ +--+ +--+ +--+
-	//     0    1    2    3
-	if (grad == 0 ||
-		_gradCache[curGrad] == _gradCache[curGrad + 1] || // no color change
-		stripSize < 2) { // the stip is small
-		colorFill<PixelType>(ptr, ptr + width, _gradCache[curGrad]);
-	} else if (grad == 3 && ox) {
-		colorFill<PixelType>(ptr, ptr + width, _gradCache[curGrad + 1]);
-	} else {
-		for (int j = x; j < x + width; j++, ptr++) {
-			bool oy = ((j & 1) == 1);
+		// Dithering:
+		//   +--+ +--+ +--+ +--+
+		//   |  | |  | | *| | *|
+		//   |  | | *| |* | |**|
+		//   +--+ +--+ +--+ +--+
+		//     0    1    2    3
+		if (grad == 0 ||
+			_gradCache[curGrad] == _gradCache[curGrad + 1] || // no color change
+			stripSize < 2) { // the stip is small
+			colorFill<PixelType>(ptr, ptr + width, _gradCache[curGrad]);
+		} else if (grad == 3 && ox) {
+			colorFill<PixelType>(ptr, ptr + width, _gradCache[curGrad + 1]);
+		} else {
+			for (int j = x; j < x + width; j++, ptr++) {
+				bool oy = ((j & 1) == 1);
 
-			if ((ox && oy) ||
-				((grad == 2 || grad == 3) && ox && !oy) ||
-				(grad == 3 && oy))
-				*ptr = _gradCache[curGrad + 1];
-			else
-				*ptr = _gradCache[curGrad];
+				if ((ox && oy) ||
+					((grad == 2 || grad == 3) && ox && !oy) ||
+					(grad == 3 && oy))
+					*ptr = _gradCache[curGrad + 1];
+				else
+					*ptr = _gradCache[curGrad];
+			}
 		}
+	} else {
+		colorFill<PixelType>(ptr, ptr + width, _gradCache[curGrad]);
 	}
 }
 
