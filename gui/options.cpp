@@ -1344,8 +1344,9 @@ void GlobalOptionsDialog::close() {
 			// FIXME: Actually, any changes (including the theme change) should
 			// only become active *after* the options dialog has closed.
 			ConfMan.set("gui_renderer", cfg, _domain);
-			g_system->setScreenBPP((byte)2);
 
+			MessageDialog error(_("You have to restart ScummVM before your changes will take effect."));
+			error.runModal();
 		}
 #ifdef USE_TRANSLATION
 		Common::String oldLang = ConfMan.get("gui_language");

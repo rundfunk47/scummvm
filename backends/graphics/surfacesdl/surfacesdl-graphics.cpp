@@ -712,7 +712,10 @@ static void fixupResolutionForAspectRatio(AspectRatio desiredAspectRatio, int &w
 }
 
 bool SurfaceSdlGraphicsManager::setScreenBPP(byte bpp) {
+
+	_videoMode.bitsPerPixel = bpp;
 	loadGFXMode();
+
 	return true;
 }
 
@@ -742,20 +745,22 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 	detectSupportedFormats();
 
 	Graphics::PixelFormat bestPossible = _supportedFormats.front();
-
+	
 	Common::String renderer = ConfMan.get("gui_renderer");
-		
-	if (renderer == "normal_16bpp" || renderer == "aa_16bpp") {
-		_videoMode.bitsPerPixel = 16;
-	} else if (renderer == "normal_32bpp" || renderer == "aa_32bpp") {
-		if (bestPossible.bytesPerPixel == 4)
-			_videoMode.bitsPerPixel = 32;
-		else if (bestPossible.bytesPerPixel == 2)
-			 // Set to 16 bits if the renderer cannot manage
+	
+	if (_screen == NULL) {
+		if (renderer == "normal_16bpp" || renderer == "aa_16bpp") {
 			_videoMode.bitsPerPixel = 16;
-	} else {
-		// Set to 16 bits if too high
-		_videoMode.bitsPerPixel = (bestPossible.bytesPerPixel << 3);
+		} else if (renderer == "normal_32bpp" || renderer == "aa_32bpp") {
+			if (bestPossible.bytesPerPixel == 4)
+				_videoMode.bitsPerPixel = 32;
+			else if (bestPossible.bytesPerPixel == 2)
+				 // Set to 16 bits if the renderer cannot manage
+				_videoMode.bitsPerPixel = 16;
+		} else {
+			// Set to 16 bits if too high
+			_videoMode.bitsPerPixel = (bestPossible.bytesPerPixel << 3);
+		}
 	}
 #endif
 
