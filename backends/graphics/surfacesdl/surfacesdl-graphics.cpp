@@ -711,6 +711,12 @@ static void fixupResolutionForAspectRatio(AspectRatio desiredAspectRatio, int &w
 	height = bestMode->h;
 }
 
+bool SurfaceSdlGraphicsManager::setScreenBPP(byte bpp) {
+	loadGFXMode();
+	return true;
+}
+
+
 bool SurfaceSdlGraphicsManager::loadGFXMode() {
 	_forceFull = true;
 

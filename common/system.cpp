@@ -78,6 +78,10 @@ OSystem::~OSystem() {
 	_fsFactory = 0;
 }
 
+bool OSystem::setScreenBPP(byte bpp) {
+	return setScreenBPP(2);
+}
+
 void OSystem::initBackend() {
 	// Verify all managers has been set
 	if (!_audiocdManager)

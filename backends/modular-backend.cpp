@@ -90,6 +90,10 @@ Graphics::PixelFormat ModularBackend::getScreenFormat() const {
 	return _graphicsManager->getScreenFormat();
 }
 
+bool ModularBackend::setScreenBPP(byte bpp) {
+	return _graphicsManager->setScreenBPP(bpp);
+}
+
 Common::List<Graphics::PixelFormat> ModularBackend::getSupportedFormats() const {
 	return _graphicsManager->getSupportedFormats();
 }

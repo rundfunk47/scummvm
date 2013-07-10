@@ -94,6 +94,7 @@ public:
 	virtual void resetGraphicsScale();
 #ifdef USE_RGB_COLOR
 	virtual Graphics::PixelFormat getScreenFormat() const { return _screenFormat; }
+	virtual bool setScreenBPP(byte bpp);
 	virtual Common::List<Graphics::PixelFormat> getSupportedFormats() const;
 #endif
 	virtual void initSize(uint w, uint h, const Graphics::PixelFormat *format = NULL);
@@ -111,6 +112,8 @@ protected:
 	virtual void grabPalette(byte *colors, uint start, uint num);
 
 public:
+	virtual bool loadGFXMode();
+
 	virtual void copyRectToScreen(const void *buf, int pitch, int x, int y, int w, int h);
 	virtual Graphics::Surface *lockScreen();
 	virtual void unlockScreen();
@@ -322,7 +325,6 @@ protected:
 
 	virtual void internUpdateScreen();
 
-	virtual bool loadGFXMode();
 	virtual void unloadGFXMode();
 	virtual bool hotswapGFXMode();
 

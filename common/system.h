@@ -192,6 +192,11 @@ protected:
 	//@}
 
 public:
+	/**
+	 * WRITE SOMETHING HERE
+	 */
+	virtual bool setScreenBPP(byte bpp);
+
 
 	/**
 	 * The following method is called once, from main.cpp, after all
