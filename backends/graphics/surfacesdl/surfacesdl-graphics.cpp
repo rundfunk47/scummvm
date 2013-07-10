@@ -732,15 +732,26 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 	_videoMode.hardwareHeight = _videoMode.overlayHeight;
 #endif
 
-	Common::String renderer = ConfMan.get("gui_renderer");
+#ifdef USE_RGB_COLOR
+	detectSupportedFormats();
 
+	Graphics::PixelFormat bestPossible = _supportedFormats.front();
+
+	Common::String renderer = ConfMan.get("gui_renderer");
+		
 	if (renderer == "normal_16bpp" || renderer == "aa_16bpp") {
 		_videoMode.bitsPerPixel = 16;
 	} else if (renderer == "normal_32bpp" || renderer == "aa_32bpp") {
-		_videoMode.bitsPerPixel = 32;
+		if (bestPossible.bytesPerPixel == 4)
+			_videoMode.bitsPerPixel = 32;
+		else if (bestPossible.bytesPerPixel == 2)
+			 // Set to 16 bits if the renderer cannot manage
+			_videoMode.bitsPerPixel = 16;
 	} else {
-		error("unknown renderer");
+		// Set to 16 bits if too high
+		_videoMode.bitsPerPixel = (bestPossible.bytesPerPixel << 3);
 	}
+#endif
 
 	//
 	// Create the surface that contains the 8 bit game data
@@ -781,9 +792,7 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 #ifdef USE_RGB_COLOR
 	detectSupportedFormats();
 #endif
-
-	_videoMode.mode;
-
+	
 	if (_hwscreen == NULL) {
 		// DON'T use error(), as this tries to bring up the debug
 		// console, which WON'T WORK now that _hwscreen is hosed.
@@ -795,8 +804,6 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 			return false;
 		}
 	}
-
-	_hwscreen;
 
 	//
 	// Create the surface used for the graphics in 16 bit before scaling, and also the overlay
