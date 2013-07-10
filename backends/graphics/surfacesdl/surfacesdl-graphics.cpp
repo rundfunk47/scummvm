@@ -775,7 +775,7 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 		fixupResolutionForAspectRatio(_videoMode.desiredAspectRatio, _videoMode.hardwareWidth, _videoMode.hardwareHeight);
 	}
 
-	_hwscreen = SDL_SetVideoMode(_videoMode.hardwareWidth, _videoMode.hardwareHeight, 16,
+	_hwscreen = SDL_SetVideoMode(_videoMode.hardwareWidth, _videoMode.hardwareHeight, _videoMode.bitsPerPixel,
 		_videoMode.fullscreen ? (SDL_FULLSCREEN|SDL_SWSURFACE) : SDL_SWSURFACE
 	);
 #ifdef USE_RGB_COLOR
@@ -836,7 +836,7 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 	_overlayFormat.aShift = _overlayscreen->format->Ashift;
 
 	_tmpscreen2 = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.overlayWidth + 3, _videoMode.overlayHeight + 3,
-						16,
+						_videoMode.bitsPerPixel,
 						_hwscreen->format->Rmask,
 						_hwscreen->format->Gmask,
 						_hwscreen->format->Bmask,
@@ -1097,8 +1097,8 @@ void SurfaceSdlGraphicsManager::internUpdateScreen() {
 					dst_y = real2Aspect(dst_y);
 
 				assert(scalerProc != NULL);
-				scalerProc((byte *)srcSurf->pixels + (r->x * 2 + 2) + (r->y + 1) * srcPitch, srcPitch,
-					(byte *)_hwscreen->pixels + rx1 * 2 + dst_y * dstPitch, dstPitch, r->w, dst_h);
+				scalerProc((byte *)srcSurf->pixels + (r->x * _overlayFormat.bytesPerPixel + _overlayFormat.bytesPerPixel) + (r->y + 1) * srcPitch, srcPitch,
+					(byte *)_hwscreen->pixels + rx1 * _overlayFormat.bytesPerPixel + dst_y * dstPitch, dstPitch, r->w * (_overlayFormat.bytesPerPixel >> 1), dst_h);
 			}
 
 			r->x = rx1;
@@ -1624,7 +1624,7 @@ void SurfaceSdlGraphicsManager::grabOverlay(void *buf, int pitch) {
 	byte *dst = (byte *)buf;
 	int h = _videoMode.overlayHeight;
 	do {
-		memcpy(dst, src, _videoMode.overlayWidth * 2);
+		memcpy(dst, src, _videoMode.overlayWidth * _screenFormat.bytesPerPixel);
 		src += _overlayscreen->pitch;
 		dst += pitch;
 	} while (--h);
@@ -1673,8 +1673,8 @@ void SurfaceSdlGraphicsManager::copyRectToOverlay(const void *buf, int pitch, in
 	byte *dst = (byte *)_overlayscreen->pixels + y * _overlayscreen->pitch + x * _overlayscreen->format->BytesPerPixel;
 	do {
 		memcpy(dst, src, w * _overlayscreen->format->BytesPerPixel);
-		dst += _overlayscreen->pitch;
 		src += pitch;
+		dst += _overlayscreen->pitch;
 	} while (--h);
 
 	SDL_UnlockSurface(_overlayscreen);
