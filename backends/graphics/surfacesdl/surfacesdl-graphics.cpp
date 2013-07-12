@@ -1663,7 +1663,7 @@ void SurfaceSdlGraphicsManager::grabOverlay(void *buf, int pitch) {
 	byte *dst = (byte *)buf;
 	int h = _videoMode.overlayHeight;
 	do {
-		memcpy(dst, src, _videoMode.overlayWidth * _screenFormat.bytesPerPixel);
+		memcpy(dst, src, _videoMode.overlayWidth * 2);
 		src += _overlayscreen->pitch;
 		dst += pitch;
 	} while (--h);
