@@ -78,8 +78,9 @@ OSystem::~OSystem() {
 	_fsFactory = 0;
 }
 
-bool OSystem::setScreenBPP(byte bpp) {
-	return setScreenBPP(2);
+bool OSystem::setScreenFormat(Graphics::PixelFormat format) {
+	// This is taken care of by code in the backend
+	return false;
 }
 
 void OSystem::initBackend() {

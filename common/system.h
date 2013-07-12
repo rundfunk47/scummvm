@@ -193,9 +193,9 @@ protected:
 
 public:
 	/**
-	 * WRITE SOMETHING HERE
+	 * TODO: Write something here
 	 */
-	virtual bool setScreenBPP(byte bpp);
+	virtual bool setScreenFormat(Graphics::PixelFormat format);
 
 
 	/**

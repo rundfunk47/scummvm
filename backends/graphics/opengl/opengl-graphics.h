@@ -68,7 +68,7 @@ public:
 	virtual void resetGraphicsScale();
 #ifdef USE_RGB_COLOR
 	virtual Graphics::PixelFormat getScreenFormat() const;
-	virtual bool setScreenBPP(byte bpp);
+	virtual bool setScreenFormat(Graphics::PixelFormat format);
 	virtual Common::List<Graphics::PixelFormat> getSupportedFormats() const = 0;
 #endif
 	virtual void initSize(uint width, uint height, const Graphics::PixelFormat *format = NULL);

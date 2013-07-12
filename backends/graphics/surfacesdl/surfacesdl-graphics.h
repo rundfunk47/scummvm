@@ -94,7 +94,7 @@ public:
 	virtual void resetGraphicsScale();
 #ifdef USE_RGB_COLOR
 	virtual Graphics::PixelFormat getScreenFormat() const { return _screenFormat; }
-	virtual bool setScreenBPP(byte bpp);
+	virtual bool setScreenFormat(Graphics::PixelFormat format);
 	virtual Common::List<Graphics::PixelFormat> getSupportedFormats() const;
 #endif
 	virtual void initSize(uint w, uint h, const Graphics::PixelFormat *format = NULL);
@@ -219,12 +219,13 @@ protected:
 		int mode;
 		int scaleFactor;
 
-		int bitsPerPixel;
-
 		int screenWidth, screenHeight;
 		int overlayWidth, overlayHeight;
 		int hardwareWidth, hardwareHeight;
 #ifdef USE_RGB_COLOR
+		Graphics::PixelFormat bestFormat;
+		Graphics::PixelFormat best16bitFormat;
+
 		Graphics::PixelFormat format;
 #endif
 	};

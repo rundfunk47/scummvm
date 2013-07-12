@@ -184,7 +184,7 @@ void OpenGLGraphicsManager::resetGraphicsScale() {
 }
 
 #ifdef USE_RGB_COLOR
-bool OpenGLGraphicsManager::setScreenBPP(byte bpp) {
+bool OpenGLGraphicsManager::setScreenFormat(Graphics::PixelFormat format) {
 	// FIXME: Actually do something here...
 	return true;
 }

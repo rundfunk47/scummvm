@@ -711,59 +711,9 @@ static void fixupResolutionForAspectRatio(AspectRatio desiredAspectRatio, int &w
 	height = bestMode->h;
 }
 
-bool SurfaceSdlGraphicsManager::setScreenBPP(byte bpp) {
-
-	_videoMode.bitsPerPixel = bpp;
-	loadGFXMode();
-
-	return true;
-}
-
-
-bool SurfaceSdlGraphicsManager::loadGFXMode() {
-	_forceFull = true;
-
-#if !defined(__MAEMO__) && !defined(DINGUX) && !defined(GPH_DEVICE) && !defined(LINUXMOTO) && !defined(OPENPANDORA)
-	_videoMode.overlayWidth = _videoMode.screenWidth * _videoMode.scaleFactor;
-	_videoMode.overlayHeight = _videoMode.screenHeight * _videoMode.scaleFactor;
-
-	if (_videoMode.screenHeight != 200 && _videoMode.screenHeight != 400)
-		_videoMode.aspectRatioCorrection = false;
-
-	if (_videoMode.aspectRatioCorrection)
-		_videoMode.overlayHeight = real2Aspect(_videoMode.overlayHeight);
-
-	_videoMode.hardwareWidth = _videoMode.screenWidth * _videoMode.scaleFactor;
-	_videoMode.hardwareHeight = effectiveScreenHeight();
-// On GPH devices ALL the _videoMode.hardware... are setup in GPHGraphicsManager::loadGFXMode()
-#elif !defined(GPH_DEVICE)
-	_videoMode.hardwareWidth = _videoMode.overlayWidth;
-	_videoMode.hardwareHeight = _videoMode.overlayHeight;
-#endif
-
-#ifdef USE_RGB_COLOR
-	detectSupportedFormats();
-
-	Graphics::PixelFormat bestPossible = _supportedFormats.front();
+bool SurfaceSdlGraphicsManager::setScreenFormat(Graphics::PixelFormat format) {
+	unloadGFXMode();
 	
-	Common::String renderer = ConfMan.get("gui_renderer");
-	
-	if (_screen == NULL) {
-		if (renderer == "normal_16bpp" || renderer == "aa_16bpp") {
-			_videoMode.bitsPerPixel = 16;
-		} else if (renderer == "normal_32bpp" || renderer == "aa_32bpp") {
-			if (bestPossible.bytesPerPixel == 4)
-				_videoMode.bitsPerPixel = 32;
-			else if (bestPossible.bytesPerPixel == 2)
-				 // Set to 16 bits if the renderer cannot manage
-				_videoMode.bitsPerPixel = 16;
-		} else {
-			// Set to 16 bits if too high
-			_videoMode.bitsPerPixel = (bestPossible.bytesPerPixel << 3);
-		}
-	}
-#endif
-
 	//
 	// Create the surface that contains the 8 bit game data
 	//
@@ -797,7 +747,7 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 		fixupResolutionForAspectRatio(_videoMode.desiredAspectRatio, _videoMode.hardwareWidth, _videoMode.hardwareHeight);
 	}
 
-	_hwscreen = SDL_SetVideoMode(_videoMode.hardwareWidth, _videoMode.hardwareHeight, _videoMode.bitsPerPixel,
+	_hwscreen = SDL_SetVideoMode(_videoMode.hardwareWidth, _videoMode.hardwareHeight, (format.bytesPerPixel << 3),
 		_videoMode.fullscreen ? (SDL_FULLSCREEN|SDL_SWSURFACE) : SDL_SWSURFACE
 	);
 #ifdef USE_RGB_COLOR
@@ -822,7 +772,7 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 
 	// Need some extra bytes around when using 2xSaI
 	_tmpscreen = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.screenWidth + 3, _videoMode.screenHeight + 3,
-						_videoMode.bitsPerPixel,
+						format.bytesPerPixel << 3,
 						_hwscreen->format->Rmask,
 						_hwscreen->format->Gmask,
 						_hwscreen->format->Bmask,
@@ -832,7 +782,7 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 		error("allocating _tmpscreen failed");
 
 	_overlayscreen = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.overlayWidth, _videoMode.overlayHeight,
-						_videoMode.bitsPerPixel,
+						format.bytesPerPixel << 3,
 						_hwscreen->format->Rmask,
 						_hwscreen->format->Gmask,
 						_hwscreen->format->Bmask,
@@ -854,7 +804,7 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 	_overlayFormat.aShift = _overlayscreen->format->Ashift;
 
 	_tmpscreen2 = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.overlayWidth + 3, _videoMode.overlayHeight + 3,
-						_videoMode.bitsPerPixel,
+						format.bytesPerPixel << 3,
 						_hwscreen->format->Rmask,
 						_hwscreen->format->Gmask,
 						_hwscreen->format->Bmask,
@@ -867,7 +817,7 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 	_osdSurface = SDL_CreateRGBSurface(SDL_SWSURFACE | SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA,
 						_hwscreen->w,
 						_hwscreen->h,
-						_videoMode.bitsPerPixel,
+						format.bytesPerPixel << 3,
 						_hwscreen->format->Rmask,
 						_hwscreen->format->Gmask,
 						_hwscreen->format->Bmask,
@@ -887,6 +837,71 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 	else
 		InitScalers(565);
 
+	return true;
+}
+
+bool SurfaceSdlGraphicsManager::loadGFXMode() {
+	_forceFull = true;
+
+#if !defined(__MAEMO__) && !defined(DINGUX) && !defined(GPH_DEVICE) && !defined(LINUXMOTO) && !defined(OPENPANDORA)
+	_videoMode.overlayWidth = _videoMode.screenWidth * _videoMode.scaleFactor;
+	_videoMode.overlayHeight = _videoMode.screenHeight * _videoMode.scaleFactor;
+
+	if (_videoMode.screenHeight != 200 && _videoMode.screenHeight != 400)
+		_videoMode.aspectRatioCorrection = false;
+
+	if (_videoMode.aspectRatioCorrection)
+		_videoMode.overlayHeight = real2Aspect(_videoMode.overlayHeight);
+
+	_videoMode.hardwareWidth = _videoMode.screenWidth * _videoMode.scaleFactor;
+	_videoMode.hardwareHeight = effectiveScreenHeight();
+// On GPH devices ALL the _videoMode.hardware... are setup in GPHGraphicsManager::loadGFXMode()
+#elif !defined(GPH_DEVICE)
+	_videoMode.hardwareWidth = _videoMode.overlayWidth;
+	_videoMode.hardwareHeight = _videoMode.overlayHeight;
+#endif
+
+#ifdef USE_RGB_COLOR
+	Graphics::PixelFormat bestFormat;
+	Graphics::PixelFormat best16bitFormat;
+	
+	detectSupportedFormats();
+	bestFormat = _supportedFormats.front();
+	
+	Common::String renderer = ConfMan.get("gui_renderer");
+	
+	if (_screen == NULL) {
+		if (renderer == "normal_32bpp" || renderer == "aa_32bpp") {
+			if (bestFormat.bytesPerPixel == 4) {
+				// Do nothing
+			} else if (bestFormat.bytesPerPixel == 2) {
+				warning("Requested 32bpp is not supported by renderer, defaulting to 16bpp");
+				best16bitFormat = bestFormat;
+			}
+		} else if (renderer == "normal_16bpp" || renderer == "aa_16bpp") {
+			// 16bpp is preferred by user
+			for (Common::List<Graphics::PixelFormat>::const_iterator it = _supportedFormats.begin(); it != _supportedFormats.end(); it++) {
+				if (it->bytesPerPixel == 2) {
+					best16bitFormat = *it;
+					break;
+				}
+			}
+
+			bestFormat = best16bitFormat;
+		} else {
+			for (Common::List<Graphics::PixelFormat>::const_iterator it = _supportedFormats.begin(); it != _supportedFormats.end(); it++) {
+				if (it->bytesPerPixel == 2) {
+					best16bitFormat = *it;
+					break;
+				}
+			}
+		}
+	}
+
+	setScreenFormat(bestFormat);
+#else
+	setScreenFormat(Graphics::PixelFormat(8, 0, 0, 0, 0));
+#endif
 	return true;
 }
 

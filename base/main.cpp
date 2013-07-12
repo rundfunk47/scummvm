@@ -448,8 +448,8 @@ extern "C" int scummvm_main(int argc, const char * const argv[]) {
 			// to save memory
 			PluginManager::instance().unloadPluginsExcept(PLUGIN_TYPE_ENGINE, plugin);
 
-			// Set BPP to 16 to not interfere with scalers
-			g_system->setScreenBPP(16);
+			// Set the screenformat to 16 bits (8 if RGB_COLOR) since scalers don't work in 32-bits
+			// g_system->setScreenFormat(Graphics::PixelFormat(2, 5, 6, 5, 0, 11, 5, 0, 0));
 
 			// Try to run the game
 			Common::Error result = runGame(plugin, system, specialDebug);
@@ -499,7 +499,7 @@ extern "C" int scummvm_main(int argc, const char * const argv[]) {
 		setupGraphics(system);
 		
 		// Restore BPP to whatever was used before the game started
-		g_system->setScreenBPP(32);
+		// g_system->setScreenFormat(Graphics::PixelFormat(4, 8, 8, 8, 8, 24, 16, 8, 0));
 
 		launcherDialog();
 	}
