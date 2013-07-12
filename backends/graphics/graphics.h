@@ -48,6 +48,7 @@ public:
 	virtual int getGraphicsMode() const = 0;
 #ifdef USE_RGB_COLOR
 	virtual Graphics::PixelFormat getScreenFormat() const = 0;
+	virtual bool setOverlayFormat(Graphics::PixelFormat format) = 0;
 	virtual bool setScreenFormat(Graphics::PixelFormat format) = 0;
 	virtual Common::List<Graphics::PixelFormat> getSupportedFormats() const = 0;
 #endif

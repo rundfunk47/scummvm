@@ -94,6 +94,10 @@ bool ModularBackend::setScreenFormat(Graphics::PixelFormat format) {
 	return _graphicsManager->setScreenFormat(format);
 }
 
+bool ModularBackend::setOverlayFormat(Graphics::PixelFormat format) {
+	return _graphicsManager->setOverlayFormat(format);
+}
+
 Common::List<Graphics::PixelFormat> ModularBackend::getSupportedFormats() const {
 	return _graphicsManager->getSupportedFormats();
 }

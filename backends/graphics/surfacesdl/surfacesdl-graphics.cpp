@@ -711,6 +711,12 @@ static void fixupResolutionForAspectRatio(AspectRatio desiredAspectRatio, int &w
 	height = bestMode->h;
 }
 
+bool SurfaceSdlGraphicsManager::setOverlayFormat(Graphics::PixelFormat format) {
+	
+	
+	return true;
+}
+
 bool SurfaceSdlGraphicsManager::setScreenFormat(Graphics::PixelFormat format) {
 	unloadGFXMode();
 	

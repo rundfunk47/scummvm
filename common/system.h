@@ -195,8 +195,12 @@ public:
 	/**
 	 * TODO: Write something here
 	 */
-	virtual bool setScreenFormat(Graphics::PixelFormat format);
+	virtual bool setOverlayFormat(Graphics::PixelFormat format);
 
+	/**
+	 * TODO: Write something here
+	 */
+	virtual bool setScreenFormat(Graphics::PixelFormat format);
 
 	/**
 	 * The following method is called once, from main.cpp, after all

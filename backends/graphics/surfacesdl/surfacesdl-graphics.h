@@ -94,6 +94,7 @@ public:
 	virtual void resetGraphicsScale();
 #ifdef USE_RGB_COLOR
 	virtual Graphics::PixelFormat getScreenFormat() const { return _screenFormat; }
+	virtual bool setOverlayFormat(Graphics::PixelFormat format);
 	virtual bool setScreenFormat(Graphics::PixelFormat format);
 	virtual Common::List<Graphics::PixelFormat> getSupportedFormats() const;
 #endif
