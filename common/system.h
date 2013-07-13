@@ -195,6 +195,16 @@ public:
 	/**
 	 * TODO: Write something here
 	 */
+	virtual Graphics::PixelFormat getPreferredFormat();
+
+	/**
+	 * TODO: Write something here
+	 */
+	virtual Graphics::PixelFormat getPreferred16bitFormat();
+
+	/**
+	 * TODO: Write something here
+	 */
 	virtual bool setOverlayFormat(Graphics::PixelFormat format);
 
 	/**

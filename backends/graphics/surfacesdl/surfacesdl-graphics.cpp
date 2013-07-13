@@ -711,6 +711,14 @@ static void fixupResolutionForAspectRatio(AspectRatio desiredAspectRatio, int &w
 	height = bestMode->h;
 }
 
+Graphics::PixelFormat SurfaceSdlGraphicsManager::getPreferredFormat() {
+	return _preferredFormat;
+}
+
+Graphics::PixelFormat SurfaceSdlGraphicsManager::getPreferred16bitFormat() {
+	return _preferred16bitFormat;
+}
+
 bool SurfaceSdlGraphicsManager::setOverlayFormat(Graphics::PixelFormat format) {
 	//
 	// Create the surface that contains the 8 bit game data
@@ -920,43 +928,36 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 #endif
 
 #ifdef USE_RGB_COLOR
-	Graphics::PixelFormat bestFormat;
-	Graphics::PixelFormat best16bitFormat;
 	
 	detectSupportedFormats();
-	bestFormat = _supportedFormats.front();
+	_preferredFormat = _supportedFormats.front();
 	
 	Common::String renderer = ConfMan.get("gui_renderer");
 	
-	if (_screen == NULL) {
-		if (renderer == "normal_32bpp" || renderer == "aa_32bpp") {
-			if (bestFormat.bytesPerPixel == 4) {
-				// Do nothing
-			} else if (bestFormat.bytesPerPixel == 2) {
-				warning("Requested 32bpp is not supported by renderer, defaulting to 16bpp");
-				best16bitFormat = bestFormat;
-			}
-		} else if (renderer == "normal_16bpp" || renderer == "aa_16bpp") {
-			// 16bpp is preferred by user
-			for (Common::List<Graphics::PixelFormat>::const_iterator it = _supportedFormats.begin(); it != _supportedFormats.end(); it++) {
-				if (it->bytesPerPixel == 2) {
-					best16bitFormat = *it;
-					break;
-				}
-			}
-
-			bestFormat = best16bitFormat;
-		} else {
-			for (Common::List<Graphics::PixelFormat>::const_iterator it = _supportedFormats.begin(); it != _supportedFormats.end(); it++) {
-				if (it->bytesPerPixel == 2) {
-					best16bitFormat = *it;
-					break;
-				}
-			}
+	for (Common::List<Graphics::PixelFormat>::const_iterator it = _supportedFormats.begin(); it != _supportedFormats.end(); it++) {
+		if (it->bytesPerPixel == 2) {
+			_preferred16bitFormat = *it;
+			break;
 		}
 	}
 
-	setScreenFormat(bestFormat);
+	if (_screen == NULL) {
+		if (renderer == "normal_32bpp" || renderer == "aa_32bpp") {
+			if (_preferredFormat.bytesPerPixel == 4) {
+				// Do nothing
+			} else if (_preferredFormat.bytesPerPixel == 2) {
+				warning("Requested 32bpp is not supported by renderer, defaulting to 16bpp");
+				_preferred16bitFormat = _preferredFormat;
+			}
+		} else if (renderer == "normal_16bpp" || renderer == "aa_16bpp") {
+			// 16bpp is preferred by user
+			_preferredFormat = _preferred16bitFormat;
+		} else {
+			// Do nothing
+		}
+	}
+
+	setScreenFormat(_preferredFormat);
 #else
 	setScreenFormat(Graphics::PixelFormat(8, 0, 0, 0, 0));
 #endif

@@ -97,6 +97,9 @@ public:
 	virtual bool setOverlayFormat(Graphics::PixelFormat format);
 	virtual bool setScreenFormat(Graphics::PixelFormat format);
 	virtual Common::List<Graphics::PixelFormat> getSupportedFormats() const;
+
+	virtual Graphics::PixelFormat getPreferredFormat();
+	virtual Graphics::PixelFormat getPreferred16bitFormat();
 #endif
 	virtual void initSize(uint w, uint h, const Graphics::PixelFormat *format = NULL);
 	virtual int getScreenChangeID() const { return _screenChangeCount; }
@@ -182,6 +185,9 @@ protected:
 	 * This method is invoked by loadGFXMode().
 	 */
 	void detectSupportedFormats();
+
+	Graphics::PixelFormat _preferredFormat;
+	Graphics::PixelFormat _preferred16bitFormat;
 #endif
 
 	/** Temporary screen (for scalers) */
@@ -224,9 +230,6 @@ protected:
 		int overlayWidth, overlayHeight;
 		int hardwareWidth, hardwareHeight;
 #ifdef USE_RGB_COLOR
-		Graphics::PixelFormat bestFormat;
-		Graphics::PixelFormat best16bitFormat;
-
 		Graphics::PixelFormat format;
 #endif
 	};

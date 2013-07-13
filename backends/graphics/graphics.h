@@ -51,6 +51,9 @@ public:
 	virtual bool setOverlayFormat(Graphics::PixelFormat format) = 0;
 	virtual bool setScreenFormat(Graphics::PixelFormat format) = 0;
 	virtual Common::List<Graphics::PixelFormat> getSupportedFormats() const = 0;
+
+	virtual Graphics::PixelFormat getPreferredFormat() = 0;
+	virtual Graphics::PixelFormat getPreferred16bitFormat() = 0;
 #endif
 	virtual void initSize(uint width, uint height, const Graphics::PixelFormat *format = NULL) = 0;
 	virtual int getScreenChangeID() const = 0;

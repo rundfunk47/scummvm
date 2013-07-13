@@ -419,7 +419,9 @@ void Engine::openMainMenuDialog() {
 
 	setGameToLoadSlot(-1);
 	
-	g_system->setOverlayFormat(Graphics::PixelFormat(4, 8, 8, 8, 8, 24, 16, 8, 0));
+	#ifdef USE_RGB_COLOR
+	g_system->setOverlayFormat(g_system->getPreferredFormat());
+	#endif
 
 	runDialog(*_mainMenuDialog);
 
@@ -438,7 +440,9 @@ void Engine::openMainMenuDialog() {
 		}
 	}
 
-	g_system->setOverlayFormat(Graphics::PixelFormat(2, 5, 6, 5, 0, 11, 5, 0, 0));
+	#ifdef USE_RGB_COLOR
+	g_system->setOverlayFormat(g_system->getPreferred16bitFormat());
+	#endif
 
 	syncSoundSettings();
 }

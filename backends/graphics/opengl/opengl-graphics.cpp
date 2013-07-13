@@ -184,6 +184,15 @@ void OpenGLGraphicsManager::resetGraphicsScale() {
 }
 
 #ifdef USE_RGB_COLOR
+
+Graphics::PixelFormat OpenGLGraphicsManager::getPreferredFormat() {
+	return Graphics::PixelFormat(4, 8, 8, 8, 8, 24, 16, 8, 0);
+}
+
+Graphics::PixelFormat OpenGLGraphicsManager::getPreferred16bitFormat() {
+	return Graphics::PixelFormat(2, 5, 6, 5, 0, 11, 5, 0, 0);
+}
+
 bool OpenGLGraphicsManager::setOverlayFormat(Graphics::PixelFormat format) {
 	// FIXME: Actually do something here...
 	return true;
