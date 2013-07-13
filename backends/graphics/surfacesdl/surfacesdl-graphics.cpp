@@ -760,6 +760,16 @@ bool SurfaceSdlGraphicsManager::setOverlayFormat(Graphics::PixelFormat format) {
 	if (_tmpscreen2 == NULL)
 		error("allocating _tmpscreen2 failed");
 
+	// Needed to make the background look right when in a menu
+	_tmpscreen = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.screenWidth + 3, _videoMode.screenHeight + 3,
+						format.bytesPerPixel << 3,
+						_hwscreen->format->Rmask,
+						_hwscreen->format->Gmask,
+						_hwscreen->format->Bmask,
+						_hwscreen->format->Amask);
+	if (_tmpscreen == NULL)
+		error("allocating _tmpscreen failed");
+
 #ifdef USE_OSD
 	_osdSurface = SDL_CreateRGBSurface(SDL_SWSURFACE | SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA,
 						_hwscreen->w,
@@ -773,6 +783,9 @@ bool SurfaceSdlGraphicsManager::setOverlayFormat(Graphics::PixelFormat format) {
 		error("allocating _osdSurface failed");
 	SDL_SetColorKey(_osdSurface, SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA, kOSDColorKey);
 #endif
+
+	_forceFull = 1;
+	internUpdateScreen();
 
 	return true;
 }
@@ -1689,8 +1702,8 @@ void SurfaceSdlGraphicsManager::clearOverlay() {
 
 	SDL_LockSurface(_tmpscreen);
 	SDL_LockSurface(_overlayscreen);
-	_scalerProc((byte *)(_tmpscreen->pixels) + _tmpscreen->pitch + 2, _tmpscreen->pitch,
-	(byte *)_overlayscreen->pixels, _overlayscreen->pitch, _videoMode.screenWidth, _videoMode.screenHeight);
+	_scalerProc((byte *)(_tmpscreen->pixels) + _tmpscreen->pitch + _overlayFormat.bytesPerPixel, _tmpscreen->pitch,
+	(byte *)_overlayscreen->pixels, _overlayscreen->pitch, _videoMode.screenWidth * (_overlayFormat.bytesPerPixel >> 1), _videoMode.screenHeight);
 
 #ifdef USE_SCALERS
 	if (_videoMode.aspectRatioCorrection)
