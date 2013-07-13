@@ -418,6 +418,8 @@ void Engine::openMainMenuDialog() {
 		_mainMenuDialog = new MainMenuDialog(this);
 
 	setGameToLoadSlot(-1);
+	
+	g_system->setOverlayFormat(Graphics::PixelFormat(4, 8, 8, 8, 8, 24, 16, 8, 0));
 
 	runDialog(*_mainMenuDialog);
 
@@ -435,6 +437,8 @@ void Engine::openMainMenuDialog() {
 			dialog.runModal();
 		}
 	}
+
+	g_system->setOverlayFormat(Graphics::PixelFormat(2, 5, 6, 5, 0, 11, 5, 0, 0));
 
 	syncSoundSettings();
 }
