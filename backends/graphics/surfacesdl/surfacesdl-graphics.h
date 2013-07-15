@@ -175,6 +175,10 @@ protected:
 
 	/** Unseen game screen */
 	SDL_Surface *_screen;
+
+	/** Background screen, used by clearOverlay and blitted to overlay if not empty*/
+	SDL_Surface *_overlayBackground;
+
 #ifdef USE_RGB_COLOR
 	Graphics::PixelFormat _screenFormat;
 	Graphics::PixelFormat _cursorFormat;

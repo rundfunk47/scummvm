@@ -720,10 +720,10 @@ Graphics::PixelFormat SurfaceSdlGraphicsManager::getPreferred16bitFormat() {
 }
 
 bool SurfaceSdlGraphicsManager::setOverlayFormat(Graphics::PixelFormat format) {
-	//
-	// Create the surface that contains the 8 bit game data
-	//
 	
+	// FIXME: Hide cursor
+	_overlayBackground = SDL_ConvertSurface(_hwscreen, _hwscreen->format, SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA);
+
 	_hwscreen = SDL_SetVideoMode(_videoMode.hardwareWidth, _videoMode.hardwareHeight, (format.bytesPerPixel << 3),
 		_videoMode.fullscreen ? (SDL_FULLSCREEN|SDL_SWSURFACE) : SDL_SWSURFACE
 	);
@@ -760,16 +760,6 @@ bool SurfaceSdlGraphicsManager::setOverlayFormat(Graphics::PixelFormat format) {
 	if (_tmpscreen2 == NULL)
 		error("allocating _tmpscreen2 failed");
 
-	// Needed to make the background look right when in a menu
-	_tmpscreen = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.screenWidth + 3, _videoMode.screenHeight + 3,
-						format.bytesPerPixel << 3,
-						_hwscreen->format->Rmask,
-						_hwscreen->format->Gmask,
-						_hwscreen->format->Bmask,
-						_hwscreen->format->Amask);
-	if (_tmpscreen == NULL)
-		error("allocating _tmpscreen failed");
-
 #ifdef USE_OSD
 	_osdSurface = SDL_CreateRGBSurface(SDL_SWSURFACE | SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA,
 						_hwscreen->w,
@@ -784,8 +774,8 @@ bool SurfaceSdlGraphicsManager::setOverlayFormat(Graphics::PixelFormat format) {
 	SDL_SetColorKey(_osdSurface, SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA, kOSDColorKey);
 #endif
 
-	_forceFull = 1;
-	internUpdateScreen();
+	_forceFull = true;
+	//internUpdateScreen();
 
 	return true;
 }
@@ -891,6 +881,16 @@ bool SurfaceSdlGraphicsManager::setScreenFormat(Graphics::PixelFormat format) {
 
 	if (_tmpscreen2 == NULL)
 		error("allocating _tmpscreen2 failed");
+
+	_overlayBackground = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.overlayWidth, _videoMode.overlayHeight,
+						format.bytesPerPixel << 3,
+						_hwscreen->format->Rmask,
+						_hwscreen->format->Gmask,
+						_hwscreen->format->Bmask,
+						_hwscreen->format->Amask);
+
+	if (_overlayBackground == NULL)
+		error("allocating _overlayBackground failed");
 
 #ifdef USE_OSD
 	_osdSurface = SDL_CreateRGBSurface(SDL_SWSURFACE | SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA,
@@ -1691,27 +1691,16 @@ void SurfaceSdlGraphicsManager::clearOverlay() {
 	if (!_overlayVisible)
 		return;
 
-	// Clear the overlay by making the game screen "look through" everywhere.
-	SDL_Rect src, dst;
-	src.x = src.y = 0;
-	dst.x = dst.y = 1;
-	src.w = dst.w = _videoMode.screenWidth;
-	src.h = dst.h = _videoMode.screenHeight;
-	if (SDL_BlitSurface(_screen, &src, _tmpscreen, &dst) != 0)
-		error("SDL_BlitSurface failed: %s", SDL_GetError());
-
-	SDL_LockSurface(_tmpscreen);
 	SDL_LockSurface(_overlayscreen);
-	_scalerProc((byte *)(_tmpscreen->pixels) + _tmpscreen->pitch + _overlayFormat.bytesPerPixel, _tmpscreen->pitch,
-	(byte *)_overlayscreen->pixels, _overlayscreen->pitch, _videoMode.screenWidth * (_overlayFormat.bytesPerPixel >> 1), _videoMode.screenHeight);
 
 #ifdef USE_SCALERS
 	if (_videoMode.aspectRatioCorrection)
 		stretch200To240((uint8 *)_overlayscreen->pixels, _overlayscreen->pitch,
 						_videoMode.overlayWidth, _videoMode.screenHeight * _videoMode.scaleFactor, 0, 0, 0);
 #endif
-	SDL_UnlockSurface(_tmpscreen);
 	SDL_UnlockSurface(_overlayscreen);
+
+	SDL_BlitSurface(_overlayBackground, NULL, _overlayscreen, NULL);
 
 	_forceFull = true;
 }
