@@ -34,6 +34,8 @@
 
 #include "backends/platform/sdl/sdl-sys.h"
 
+#include "graphics/cursorman.h"
+
 #ifndef RELEASE_BUILD
 // Define this to allow for focus rectangle debugging
 #define USE_SDL_DEBUG_FOCUSRECT

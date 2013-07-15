@@ -721,8 +721,10 @@ Graphics::PixelFormat SurfaceSdlGraphicsManager::getPreferred16bitFormat() {
 
 bool SurfaceSdlGraphicsManager::setOverlayFormat(Graphics::PixelFormat format) {
 	
-	// FIXME: Hide cursor
+	CursorMan.showMouse(false);
+	updateScreen();
 	_overlayBackground = SDL_ConvertSurface(_hwscreen, _hwscreen->format, SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA);
+	CursorMan.showMouse(true);
 
 	_hwscreen = SDL_SetVideoMode(_videoMode.hardwareWidth, _videoMode.hardwareHeight, (format.bytesPerPixel << 3),
 		_videoMode.fullscreen ? (SDL_FULLSCREEN|SDL_SWSURFACE) : SDL_SWSURFACE
