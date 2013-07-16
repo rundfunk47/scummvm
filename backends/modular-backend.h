@@ -72,9 +72,6 @@ public:
 	virtual bool setOverlayFormat(Graphics::PixelFormat format);
 	virtual bool setScreenFormat(Graphics::PixelFormat format);
 	virtual Common::List<Graphics::PixelFormat> getSupportedFormats() const;
-
-	virtual Graphics::PixelFormat getPreferredFormat();
-	virtual Graphics::PixelFormat getPreferred16bitFormat();
 #endif
 	virtual void initSize(uint width, uint height, const Graphics::PixelFormat *format = NULL);
 	virtual int getScreenChangeID() const;

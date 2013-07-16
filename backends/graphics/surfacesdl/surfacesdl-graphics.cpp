@@ -126,7 +126,7 @@ SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSou
 	_screenFormat(Graphics::PixelFormat::createFormatCLUT8()),
 	_cursorFormat(Graphics::PixelFormat::createFormatCLUT8()),
 #endif
-	_overlayVisible(false),
+	_overlayVisible(true),
 	_overlayscreen(0), _tmpscreen2(0),
 	_scalerProc(0), _screenChangeCount(0),
 	_mouseVisible(false), _mouseNeedsRedraw(false), _mouseData(0), _mouseSurface(0),
@@ -187,6 +187,15 @@ SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSou
 	_videoMode.fullscreen = ConfMan.getBool("fullscreen");
 #else
 	_videoMode.fullscreen = true;
+#endif
+
+#ifdef USE_RGB_COLOR
+	Common::String renderer = ConfMan.get("gui_renderer");
+
+	if (renderer == "aa_32bpp" || renderer == "normal_32bpp")
+		_32bitGUI = true;
+	else
+		_32bitGUI = false;
 #endif
 }
 
@@ -256,6 +265,8 @@ bool SurfaceSdlGraphicsManager::getFeatureState(OSystem::Feature f) {
 		return _videoMode.aspectRatioCorrection;
 	case OSystem::kFeatureCursorPalette:
 		return !_cursorPaletteDisabled;
+	case OSystem::kFeature32bitGUI:
+		return _32bitGUI;
 	default:
 		return false;
 	}
@@ -711,80 +722,22 @@ static void fixupResolutionForAspectRatio(AspectRatio desiredAspectRatio, int &w
 	height = bestMode->h;
 }
 
-Graphics::PixelFormat SurfaceSdlGraphicsManager::getPreferredFormat() {
-	return _preferredFormat;
-}
-
-Graphics::PixelFormat SurfaceSdlGraphicsManager::getPreferred16bitFormat() {
-	return _preferred16bitFormat;
-}
-
 bool SurfaceSdlGraphicsManager::setOverlayFormat(Graphics::PixelFormat format) {
-	
+	/*
 	CursorMan.showMouse(false);
 	updateScreen();
 	_overlayBackground = SDL_ConvertSurface(_hwscreen, _hwscreen->format, SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA);
 	CursorMan.showMouse(true);
+	*/
 
-	_hwscreen = SDL_SetVideoMode(_videoMode.hardwareWidth, _videoMode.hardwareHeight, (format.bytesPerPixel << 3),
-		_videoMode.fullscreen ? (SDL_FULLSCREEN|SDL_SWSURFACE) : SDL_SWSURFACE
-	);
-	
-	_overlayscreen = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.overlayWidth, _videoMode.overlayHeight,
-						format.bytesPerPixel << 3,
-						_hwscreen->format->Rmask,
-						_hwscreen->format->Gmask,
-						_hwscreen->format->Bmask,
-						_hwscreen->format->Amask);
-
-	if (_overlayscreen == NULL)
-		error("allocating _overlayscreen failed");
-
-	_overlayFormat.bytesPerPixel = _overlayscreen->format->BytesPerPixel;
-
-	_overlayFormat.rLoss = _overlayscreen->format->Rloss;
-	_overlayFormat.gLoss = _overlayscreen->format->Gloss;
-	_overlayFormat.bLoss = _overlayscreen->format->Bloss;
-	_overlayFormat.aLoss = _overlayscreen->format->Aloss;
-
-	_overlayFormat.rShift = _overlayscreen->format->Rshift;
-	_overlayFormat.gShift = _overlayscreen->format->Gshift;
-	_overlayFormat.bShift = _overlayscreen->format->Bshift;
-	_overlayFormat.aShift = _overlayscreen->format->Ashift;
-
-	_tmpscreen2 = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.overlayWidth + 3, _videoMode.overlayHeight + 3,
-						format.bytesPerPixel << 3,
-						_hwscreen->format->Rmask,
-						_hwscreen->format->Gmask,
-						_hwscreen->format->Bmask,
-						_hwscreen->format->Amask);
-
-	if (_tmpscreen2 == NULL)
-		error("allocating _tmpscreen2 failed");
-
-#ifdef USE_OSD
-	_osdSurface = SDL_CreateRGBSurface(SDL_SWSURFACE | SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA,
-						_hwscreen->w,
-						_hwscreen->h,
-						format.bytesPerPixel << 3,
-						_hwscreen->format->Rmask,
-						_hwscreen->format->Gmask,
-						_hwscreen->format->Bmask,
-						_hwscreen->format->Amask);
-	if (_osdSurface == NULL)
-		error("allocating _osdSurface failed");
-	SDL_SetColorKey(_osdSurface, SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA, kOSDColorKey);
-#endif
-
-	_forceFull = true;
-	//internUpdateScreen();
-
+	//
+	// Create the surface that contains the scaled graphics in 16 bit mode
+	//
 	return true;
 }
 
 bool SurfaceSdlGraphicsManager::setScreenFormat(Graphics::PixelFormat format) {
-	unloadGFXMode();
-	
+
 	//
 	// Create the surface that contains the 8 bit game data
 	//
@@ -804,6 +757,10 @@ bool SurfaceSdlGraphicsManager::setScreenFormat(Graphics::PixelFormat format) {
 		error("allocating _screen failed");
 #endif
 
+	_hwscreen = SDL_SetVideoMode(_videoMode.hardwareWidth, _videoMode.hardwareHeight, format.bytesPerPixel << 3,
+		_videoMode.fullscreen ? (SDL_FULLSCREEN|SDL_SWSURFACE) : SDL_SWSURFACE
+	);
+
 	// SDL 1.2 palettes default to all black,
 	// SDL 1.3 palettes default to all white,
 	// Thus set our own default palette to all black.
@@ -818,32 +775,13 @@ bool SurfaceSdlGraphicsManager::setScreenFormat(Graphics::PixelFormat format) {
 		fixupResolutionForAspectRatio(_videoMode.desiredAspectRatio, _videoMode.hardwareWidth, _videoMode.hardwareHeight);
 	}
 
-	_hwscreen = SDL_SetVideoMode(_videoMode.hardwareWidth, _videoMode.hardwareHeight, (format.bytesPerPixel << 3),
-		_videoMode.fullscreen ? (SDL_FULLSCREEN|SDL_SWSURFACE) : SDL_SWSURFACE
-	);
-#ifdef USE_RGB_COLOR
-	detectSupportedFormats();
-#endif
-	
-	if (_hwscreen == NULL) {
-		// DON'T use error(), as this tries to bring up the debug
-		// console, which WON'T WORK now that _hwscreen is hosed.
-
-		if (!_oldVideoMode.setup) {
-			warning("SDL_SetVideoMode says we can't switch to that mode (%s)", SDL_GetError());
-			g_system->quit();
-		} else {
-			return false;
-		}
-	}
-
 	//
-	// Create the surface used for the graphics in 16 bit before scaling, and also the overlay
+	// Create the surface used for the graphics in 16 bit before scaling
 	//
 
 	// Need some extra bytes around when using 2xSaI
 	_tmpscreen = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.screenWidth + 3, _videoMode.screenHeight + 3,
-						format.bytesPerPixel << 3,
+						_hwscreen->format->BytesPerPixel << 3,
 						_hwscreen->format->Rmask,
 						_hwscreen->format->Gmask,
 						_hwscreen->format->Bmask,
@@ -851,9 +789,14 @@ bool SurfaceSdlGraphicsManager::setScreenFormat(Graphics::PixelFormat format) {
 
 	if (_tmpscreen == NULL)
 		error("allocating _tmpscreen failed");
+	
+	
+	if (_videoMode.fullscreen) {
+		fixupResolutionForAspectRatio(_videoMode.desiredAspectRatio, _videoMode.hardwareWidth, _videoMode.hardwareHeight);
+	}
 
 	_overlayscreen = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.overlayWidth, _videoMode.overlayHeight,
-						format.bytesPerPixel << 3,
+						_hwscreen->format->BytesPerPixel << 3,
 						_hwscreen->format->Rmask,
 						_hwscreen->format->Gmask,
 						_hwscreen->format->Bmask,
@@ -861,7 +804,7 @@ bool SurfaceSdlGraphicsManager::setScreenFormat(Graphics::PixelFormat format) {
 
 	if (_overlayscreen == NULL)
 		error("allocating _overlayscreen failed");
-
+	
 	_overlayFormat.bytesPerPixel = _overlayscreen->format->BytesPerPixel;
 
 	_overlayFormat.rLoss = _overlayscreen->format->Rloss;
@@ -874,8 +817,11 @@ bool SurfaceSdlGraphicsManager::setScreenFormat(Graphics::PixelFormat format) {
 	_overlayFormat.bShift = _overlayscreen->format->Bshift;
 	_overlayFormat.aShift = _overlayscreen->format->Ashift;
 
+	/*if (_overlayFormat.bytesPerPixel == 4 && _32bitGUI == true)
+		_preferredOverlayFormat = _overlayFormat;
+*/
 	_tmpscreen2 = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.overlayWidth + 3, _videoMode.overlayHeight + 3,
-						format.bytesPerPixel << 3,
+						_hwscreen->format->BytesPerPixel << 3,
 						_hwscreen->format->Rmask,
 						_hwscreen->format->Gmask,
 						_hwscreen->format->Bmask,
@@ -884,21 +830,11 @@ bool SurfaceSdlGraphicsManager::setScreenFormat(Graphics::PixelFormat format) {
 	if (_tmpscreen2 == NULL)
 		error("allocating _tmpscreen2 failed");
 
-	_overlayBackground = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.overlayWidth, _videoMode.overlayHeight,
-						format.bytesPerPixel << 3,
-						_hwscreen->format->Rmask,
-						_hwscreen->format->Gmask,
-						_hwscreen->format->Bmask,
-						_hwscreen->format->Amask);
-
-	if (_overlayBackground == NULL)
-		error("allocating _overlayBackground failed");
-
 #ifdef USE_OSD
 	_osdSurface = SDL_CreateRGBSurface(SDL_SWSURFACE | SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA,
 						_hwscreen->w,
 						_hwscreen->h,
-						format.bytesPerPixel << 3,
+						_hwscreen->format->BytesPerPixel << 3,
 						_hwscreen->format->Rmask,
 						_hwscreen->format->Gmask,
 						_hwscreen->format->Bmask,
@@ -917,7 +853,7 @@ bool SurfaceSdlGraphicsManager::setScreenFormat(Graphics::PixelFormat format) {
 		InitScalers(555);
 	else
 		InitScalers(565);
-
+	
 	return true;
 }
 
@@ -942,37 +878,61 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 	_videoMode.hardwareHeight = _videoMode.overlayHeight;
 #endif
 
-#ifdef USE_RGB_COLOR
-	
+#ifdef USE_RGB_COLOR	
 	detectSupportedFormats();
-	_preferredFormat = _supportedFormats.front();
-	
-	Common::String renderer = ConfMan.get("gui_renderer");
-	
+
+	// FIXME: Do the scalers/backends report which bpp-settings they work with?
 	for (Common::List<Graphics::PixelFormat>::const_iterator it = _supportedFormats.begin(); it != _supportedFormats.end(); it++) {
 		if (it->bytesPerPixel == 2) {
-			_preferred16bitFormat = *it;
+			_preferredFormat = *it;
 			break;
 		}
 	}
 
-	if (_screen == NULL) {
-		if (renderer == "normal_32bpp" || renderer == "aa_32bpp") {
-			if (_preferredFormat.bytesPerPixel == 4) {
-				// Do nothing
-			} else if (_preferredFormat.bytesPerPixel == 2) {
-				warning("Requested 32bpp is not supported by renderer, defaulting to 16bpp");
-				_preferred16bitFormat = _preferredFormat;
-			}
-		} else if (renderer == "normal_16bpp" || renderer == "aa_16bpp") {
-			// 16bpp is preferred by user
-			_preferredFormat = _preferred16bitFormat;
-		} else {
-			// Do nothing
-		}
+	// FIXME: There is probably a better way of doing this
+	// What we are essentially doing is creating a SDL_Surface with the requested bpp, and 
+	// then setting _preferredOverlayFormat from the properties it gets.
+
+	SDL_Surface * temphwscreen;
+
+	if (_32bitGUI) {
+		temphwscreen = SDL_SetVideoMode(_videoMode.hardwareWidth, _videoMode.hardwareHeight, 32,
+			_videoMode.fullscreen ? (SDL_FULLSCREEN|SDL_SWSURFACE) : SDL_SWSURFACE );
+	} else {
+		temphwscreen = SDL_SetVideoMode(_videoMode.hardwareWidth, _videoMode.hardwareHeight, 16,
+			_videoMode.fullscreen ? (SDL_FULLSCREEN|SDL_SWSURFACE) : SDL_SWSURFACE );
 	}
 
-	setScreenFormat(_preferredFormat);
+	SDL_Surface * tmp = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.overlayWidth, _videoMode.overlayHeight,
+		temphwscreen->format->BytesPerPixel << 3,
+		temphwscreen->format->Rmask,
+		temphwscreen->format->Gmask,
+		temphwscreen->format->Bmask,
+		temphwscreen->format->Amask);
+
+	_preferredOverlayFormat.bytesPerPixel = tmp->format->BytesPerPixel;
+
+	_preferredOverlayFormat.rLoss = tmp->format->Rloss;
+	_preferredOverlayFormat.gLoss = tmp->format->Gloss;
+	_preferredOverlayFormat.bLoss = tmp->format->Bloss;
+	_preferredOverlayFormat.aLoss = tmp->format->Aloss;
+
+	_preferredOverlayFormat.rShift = tmp->format->Rshift;
+	_preferredOverlayFormat.gShift = tmp->format->Gshift;
+	_preferredOverlayFormat.bShift = tmp->format->Bshift;
+	_preferredOverlayFormat.aShift = tmp->format->Ashift;
+
+	SDL_FreeSurface(temphwscreen);
+	temphwscreen= NULL;
+	
+	SDL_FreeSurface(tmp);
+	tmp = NULL;
+
+	if (_overlayVisible)
+		setScreenFormat(_preferredOverlayFormat);
+	else
+		setScreenFormat(_preferredFormat);
+
 #else
 	setScreenFormat(Graphics::PixelFormat(8, 0, 0, 0, 0));
 #endif
@@ -1659,6 +1619,12 @@ void SurfaceSdlGraphicsManager::showOverlay() {
 	warpMouse(x, y);
 
 	clearOverlay();
+
+#ifdef USE_RGB_COLOR
+	setScreenFormat(_preferredOverlayFormat);
+#endif
+
+	_forceFull = true; // Used???
 }
 
 void SurfaceSdlGraphicsManager::hideOverlay() {
@@ -1682,6 +1648,10 @@ void SurfaceSdlGraphicsManager::hideOverlay() {
 
 	clearOverlay();
 
+#ifdef USE_RGB_COLOR
+	setScreenFormat(_preferredFormat);
+#endif
+
 	_forceFull = true;
 }
 
@@ -1702,7 +1672,7 @@ void SurfaceSdlGraphicsManager::clearOverlay() {
 #endif
 	SDL_UnlockSurface(_overlayscreen);
 
-	SDL_BlitSurface(_overlayBackground, NULL, _overlayscreen, NULL);
+//	SDL_BlitSurface(_overlayBackground, NULL, _overlayscreen, NULL);
 
 	_forceFull = true;
 }

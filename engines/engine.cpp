@@ -419,10 +419,6 @@ void Engine::openMainMenuDialog() {
 
 	setGameToLoadSlot(-1);
 	
-	#ifdef USE_RGB_COLOR
-	g_system->setOverlayFormat(g_system->getPreferredFormat());
-	#endif
-
 	runDialog(*_mainMenuDialog);
 
 	// Load savegame after main menu execution
@@ -439,11 +435,7 @@ void Engine::openMainMenuDialog() {
 			dialog.runModal();
 		}
 	}
-
-	#ifdef USE_RGB_COLOR
-	g_system->setOverlayFormat(g_system->getPreferred16bitFormat());
-	#endif
-
+	
 	syncSoundSettings();
 }
 

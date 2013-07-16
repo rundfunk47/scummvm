@@ -195,16 +195,6 @@ public:
 	/**
 	 * TODO: Write something here
 	 */
-	virtual Graphics::PixelFormat getPreferredFormat();
-
-	/**
-	 * TODO: Write something here
-	 */
-	virtual Graphics::PixelFormat getPreferred16bitFormat();
-
-	/**
-	 * TODO: Write something here
-	 */
 	virtual bool setOverlayFormat(Graphics::PixelFormat format);
 
 	/**
@@ -333,7 +323,13 @@ public:
 		 *
 		 * This feature has no associated state.
 		 */
-		kFeatureDisplayLogFile
+		kFeatureDisplayLogFile,
+
+		/**
+		 * The precence of this feature in the backend indicates that it supports
+		 * 32-bit rendering of the GUI
+		 */
+		 kFeature32bitGUI
 	};
 
 	/**

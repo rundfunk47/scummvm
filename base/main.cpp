@@ -256,6 +256,14 @@ static void setupGraphics(OSystem &system) {
 			system.setFeatureState(OSystem::kFeatureAspectRatioCorrection, ConfMan.getBool("aspect_ratio"));
 		if (ConfMan.hasKey("fullscreen"))
 			system.setFeatureState(OSystem::kFeatureFullscreenMode, ConfMan.getBool("fullscreen"));
+
+		Common::String renderer = ConfMan.get("gui_renderer");
+
+		if (renderer == "aa_32bpp" || renderer == "normal_32bpp")
+			system.setFeatureState(OSystem::kFeature32bitGUI, true);
+		else
+			system.setFeatureState(OSystem::kFeature32bitGUI, false);
+
 	system.endGFXTransaction();
 
 	// When starting up launcher for the first time, the user might have specified
@@ -448,11 +456,6 @@ extern "C" int scummvm_main(int argc, const char * const argv[]) {
 			// to save memory
 			PluginManager::instance().unloadPluginsExcept(PLUGIN_TYPE_ENGINE, plugin);
 
-			// Set the screenformat to 16 bits (8 if RGB_COLOR) since scalers don't work in 32-bits
-			#ifdef USE_RGB_COLOR
-			g_system->setScreenFormat(g_system->getPreferred16bitFormat());
-			#endif
-
 			// Try to run the game
 			Common::Error result = runGame(plugin, system, specialDebug);
 
@@ -500,11 +503,6 @@ extern "C" int scummvm_main(int argc, const char * const argv[]) {
 		// reset the graphics to default
 		setupGraphics(system);
 		
-		// Restore BPP to whatever was used before the game started
-		#ifdef USE_RGB_COLOR
-		g_system->setScreenFormat(g_system->getPreferredFormat());
-		#endif
-
 		launcherDialog();
 	}
 	PluginManager::instance().unloadAllPlugins();

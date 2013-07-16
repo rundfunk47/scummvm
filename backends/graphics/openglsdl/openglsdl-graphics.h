@@ -74,8 +74,6 @@ protected:
 	 */
 	void detectSupportedFormats();
 
-	Graphics::PixelFormat _preferredFormat;
-	Graphics::PixelFormat _preferred16bitFormat;
 #endif
 
 	/**

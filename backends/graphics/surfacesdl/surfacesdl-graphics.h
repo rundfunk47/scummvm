@@ -99,9 +99,6 @@ public:
 	virtual bool setOverlayFormat(Graphics::PixelFormat format);
 	virtual bool setScreenFormat(Graphics::PixelFormat format);
 	virtual Common::List<Graphics::PixelFormat> getSupportedFormats() const;
-
-	virtual Graphics::PixelFormat getPreferredFormat();
-	virtual Graphics::PixelFormat getPreferred16bitFormat();
 #endif
 	virtual void initSize(uint w, uint h, const Graphics::PixelFormat *format = NULL);
 	virtual int getScreenChangeID() const { return _screenChangeCount; }
@@ -131,7 +128,7 @@ public:
 
 	virtual void showOverlay();
 	virtual void hideOverlay();
-	virtual Graphics::PixelFormat getOverlayFormat() const { return _overlayFormat; }
+	virtual Graphics::PixelFormat getOverlayFormat() const { return _preferredOverlayFormat; }
 	virtual void clearOverlay();
 	virtual void grabOverlay(void *buf, int pitch);
 	virtual void copyRectToOverlay(const void *buf, int pitch, int x, int y, int w, int h);
@@ -192,8 +189,10 @@ protected:
 	 */
 	void detectSupportedFormats();
 
+	bool _32bitGUI;
+
 	Graphics::PixelFormat _preferredFormat;
-	Graphics::PixelFormat _preferred16bitFormat;
+	Graphics::PixelFormat _preferredOverlayFormat;
 #endif
 
 	/** Temporary screen (for scalers) */

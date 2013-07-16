@@ -102,14 +102,6 @@ Common::List<Graphics::PixelFormat> ModularBackend::getSupportedFormats() const 
 	return _graphicsManager->getSupportedFormats();
 }
 
-Graphics::PixelFormat ModularBackend::getPreferredFormat() {
-	return _graphicsManager->getPreferredFormat();
-}
-	
-Graphics::PixelFormat ModularBackend::getPreferred16bitFormat() {
-	return _graphicsManager->getPreferred16bitFormat();
-}
-
 #endif
 
 void ModularBackend::initSize(uint w, uint h, const Graphics::PixelFormat *format ) {

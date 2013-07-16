@@ -79,15 +79,6 @@ OSystem::~OSystem() {
 }
 
 #ifdef USE_RGB_COLOR
-Graphics::PixelFormat OSystem::getPreferredFormat() {
-	// This is taken care of by code in the backend
-	return Graphics::PixelFormat(1,0,0,0,0,0,0,0,0);
-}
-
-Graphics::PixelFormat OSystem::getPreferred16bitFormat() {
-	// This is taken care of by code in the backend
-	return Graphics::PixelFormat(1,0,0,0,0,0,0,0,0);
-}
 
 bool OSystem::setOverlayFormat(Graphics::PixelFormat format) {
 	// This is taken care of by code in the backend
