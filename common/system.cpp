@@ -78,19 +78,6 @@ OSystem::~OSystem() {
 	_fsFactory = 0;
 }
 
-#ifdef USE_RGB_COLOR
-
-bool OSystem::setOverlayFormat(Graphics::PixelFormat format) {
-	// This is taken care of by code in the backend
-	return false;
-}
-
-bool OSystem::setScreenFormat(Graphics::PixelFormat format) {
-	// This is taken care of by code in the backend
-	return false;
-}
-#endif
-
 void OSystem::initBackend() {
 	// Verify all managers has been set
 	if (!_audiocdManager)

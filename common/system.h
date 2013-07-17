@@ -193,16 +193,6 @@ protected:
 
 public:
 	/**
-	 * TODO: Write something here
-	 */
-	virtual bool setOverlayFormat(Graphics::PixelFormat format);
-
-	/**
-	 * TODO: Write something here
-	 */
-	virtual bool setScreenFormat(Graphics::PixelFormat format);
-
-	/**
 	 * The following method is called once, from main.cpp, after all
 	 * config data (including command line params etc.) are fully loaded.
 	 *

@@ -722,16 +722,6 @@ static void fixupResolutionForAspectRatio(AspectRatio desiredAspectRatio, int &w
 	height = bestMode->h;
 }
 
-bool SurfaceSdlGraphicsManager::setOverlayFormat(Graphics::PixelFormat format) {
-	
-
-
-	//
-	// Create the surface that contains the scaled graphics in 16 bit mode
-	//
-	return true;
-}
-
 bool SurfaceSdlGraphicsManager::setScreenFormat(Graphics::PixelFormat format) {
 
 	_hwscreen = SDL_SetVideoMode(_videoMode.hardwareWidth, _videoMode.hardwareHeight, format.bytesPerPixel << 3,
@@ -1986,7 +1976,7 @@ void SurfaceSdlGraphicsManager::blitCursor() {
 		_mouseSurface = SDL_CreateRGBSurface(SDL_SWSURFACE | SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA,
 						_mouseCurState.rW,
 						_mouseCurState.rH,
-						16,
+						32,
 						_hwscreen->format->Rmask,
 						_hwscreen->format->Gmask,
 						_hwscreen->format->Bmask,

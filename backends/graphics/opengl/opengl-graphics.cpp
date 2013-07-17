@@ -184,17 +184,6 @@ void OpenGLGraphicsManager::resetGraphicsScale() {
 }
 
 #ifdef USE_RGB_COLOR
-
-bool OpenGLGraphicsManager::setOverlayFormat(Graphics::PixelFormat format) {
-	// FIXME: Actually do something here...
-	return true;
-}
-
-bool OpenGLGraphicsManager::setScreenFormat(Graphics::PixelFormat format) {
-	// FIXME: Actually do something here...
-	return true;
-}
-
 Graphics::PixelFormat OpenGLGraphicsManager::getScreenFormat() const {
 	return _screenFormat;
 }
