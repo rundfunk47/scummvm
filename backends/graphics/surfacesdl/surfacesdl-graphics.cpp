@@ -121,7 +121,7 @@ SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSou
 #ifdef USE_OSD
 	_osdSurface(0), _osdAlpha(SDL_ALPHA_TRANSPARENT), _osdFadeStartTime(0),
 #endif
-	_hwscreen(0), _screen(0), _tmpscreen(0),
+	_hwscreen(0), _screen(0), _tmpscreen(0), _overlayBackground(0),
 #ifdef USE_RGB_COLOR
 	_screenFormat(Graphics::PixelFormat::createFormatCLUT8()),
 	_cursorFormat(Graphics::PixelFormat::createFormatCLUT8()),
@@ -723,12 +723,8 @@ static void fixupResolutionForAspectRatio(AspectRatio desiredAspectRatio, int &w
 }
 
 bool SurfaceSdlGraphicsManager::setOverlayFormat(Graphics::PixelFormat format) {
-	/*
-	CursorMan.showMouse(false);
-	updateScreen();
-	_overlayBackground = SDL_ConvertSurface(_hwscreen, _hwscreen->format, SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA);
-	CursorMan.showMouse(true);
-	*/
+	
+
 
 	//
 	// Create the surface that contains the scaled graphics in 16 bit mode
@@ -737,25 +733,6 @@ bool SurfaceSdlGraphicsManager::setOverlayFormat(Graphics::PixelFormat format) {
 }
 
 bool SurfaceSdlGraphicsManager::setScreenFormat(Graphics::PixelFormat format) {
-
-	//
-	// Create the surface that contains the 8 bit game data
-	//
-#ifdef USE_RGB_COLOR
-	_screen = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.screenWidth, _videoMode.screenHeight,
-						_screenFormat.bytesPerPixel << 3,
-						((1 << _screenFormat.rBits()) - 1) << _screenFormat.rShift ,
-						((1 << _screenFormat.gBits()) - 1) << _screenFormat.gShift ,
-						((1 << _screenFormat.bBits()) - 1) << _screenFormat.bShift ,
-						((1 << _screenFormat.aBits()) - 1) << _screenFormat.aShift );
-	if (_screen == NULL)
-		error("allocating _screen failed");
-
-#else
-	_screen = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.screenWidth, _videoMode.screenHeight, 8, 0, 0, 0, 0);
-	if (_screen == NULL)
-		error("allocating _screen failed");
-#endif
 
 	_hwscreen = SDL_SetVideoMode(_videoMode.hardwareWidth, _videoMode.hardwareHeight, format.bytesPerPixel << 3,
 		_videoMode.fullscreen ? (SDL_FULLSCREEN|SDL_SWSURFACE) : SDL_SWSURFACE
@@ -817,9 +794,6 @@ bool SurfaceSdlGraphicsManager::setScreenFormat(Graphics::PixelFormat format) {
 	_overlayFormat.bShift = _overlayscreen->format->Bshift;
 	_overlayFormat.aShift = _overlayscreen->format->Ashift;
 
-	/*if (_overlayFormat.bytesPerPixel == 4 && _32bitGUI == true)
-		_preferredOverlayFormat = _overlayFormat;
-*/
 	_tmpscreen2 = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.overlayWidth + 3, _videoMode.overlayHeight + 3,
 						_hwscreen->format->BytesPerPixel << 3,
 						_hwscreen->format->Rmask,
@@ -853,7 +827,7 @@ bool SurfaceSdlGraphicsManager::setScreenFormat(Graphics::PixelFormat format) {
 		InitScalers(555);
 	else
 		InitScalers(565);
-	
+
 	return true;
 }
 
@@ -922,11 +896,43 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 	_preferredOverlayFormat.bShift = tmp->format->Bshift;
 	_preferredOverlayFormat.aShift = tmp->format->Ashift;
 
-	SDL_FreeSurface(temphwscreen);
+	// Used for blitting
+	SDL_Surface * tmpgamescreen = SDL_SetVideoMode(_videoMode.hardwareWidth, _videoMode.hardwareHeight, 16,
+			_videoMode.fullscreen ? (SDL_FULLSCREEN|SDL_SWSURFACE) : SDL_SWSURFACE );
+	// Used for blitting
+	_overlayBackground = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.overlayWidth, _videoMode.overlayHeight,
+		tmpgamescreen->format->BytesPerPixel << 3,
+		tmpgamescreen->format->Rmask,
+		tmpgamescreen->format->Gmask,
+		tmpgamescreen->format->Bmask,
+		tmpgamescreen->format->Amask);
+
+	SDL_FreeSurface(tmpgamescreen);
 	temphwscreen= NULL;
-	
+
 	SDL_FreeSurface(tmp);
 	tmp = NULL;
+
+	SDL_FreeSurface(temphwscreen);
+	temphwscreen= NULL;
+
+	//
+	// Create the surface that contains the 8 bit game data
+	//
+	#ifdef USE_RGB_COLOR
+	_screen = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.screenWidth, _videoMode.screenHeight,
+						_screenFormat.bytesPerPixel << 3,
+						((1 << _screenFormat.rBits()) - 1) << _screenFormat.rShift ,
+						((1 << _screenFormat.gBits()) - 1) << _screenFormat.gShift ,
+						((1 << _screenFormat.bBits()) - 1) << _screenFormat.bShift ,
+						((1 << _screenFormat.aBits()) - 1) << _screenFormat.aShift );
+	if (_screen == NULL)
+		error("allocating _screen failed");
+	#else
+	_screen = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.screenWidth, _videoMode.screenHeight, 8, 0, 0, 0, 0);
+	if (_screen == NULL)
+		error("allocating _screen failed");
+	#endif
 
 	if (_overlayVisible)
 		setScreenFormat(_preferredOverlayFormat);
@@ -1618,13 +1624,18 @@ void SurfaceSdlGraphicsManager::showOverlay() {
 
 	warpMouse(x, y);
 
-	clearOverlay();
+	CursorMan.showMouse(false);
+	updateScreen();
+	_overlayBackground = SDL_ConvertSurface(_hwscreen, _hwscreen->format, SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA);
+	CursorMan.showMouse(true);
 
 #ifdef USE_RGB_COLOR
 	setScreenFormat(_preferredOverlayFormat);
 #endif
 
-	_forceFull = true; // Used???
+	_forceFull = true;
+
+	clearOverlay();
 }
 
 void SurfaceSdlGraphicsManager::hideOverlay() {
@@ -1645,8 +1656,6 @@ void SurfaceSdlGraphicsManager::hideOverlay() {
 		y = aspect2Real(y);
 
 	warpMouse(x, y);
-
-	clearOverlay();
 
 #ifdef USE_RGB_COLOR
 	setScreenFormat(_preferredFormat);
@@ -1672,7 +1681,7 @@ void SurfaceSdlGraphicsManager::clearOverlay() {
 #endif
 	SDL_UnlockSurface(_overlayscreen);
 
-//	SDL_BlitSurface(_overlayBackground, NULL, _overlayscreen, NULL);
+	SDL_BlitSurface(_overlayBackground, NULL, _overlayscreen, NULL);
 
 	_forceFull = true;
 }
