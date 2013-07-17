@@ -1612,6 +1612,18 @@ void SurfaceSdlGraphicsManager::showOverlay() {
 	if (_overlayVisible)
 		return;
 
+	// Take a "picture" of the current buffer, to be displayed by clearOverlay();
+	// We also hide the cursor (if shown)
+
+	if (CursorMan.isVisible()) {
+		CursorMan.showMouse(false);
+		g_system->updateScreen();
+		_overlayBackground = SDL_ConvertSurface(_hwscreen, _hwscreen->format, SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA);
+		CursorMan.showMouse(true);
+	} else {
+		_overlayBackground = SDL_ConvertSurface(_hwscreen, _hwscreen->format, SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA);
+	}
+
 	_overlayVisible = true;
 
 	// Since resolution could change, put mouse to adjusted position
@@ -1623,11 +1635,6 @@ void SurfaceSdlGraphicsManager::showOverlay() {
 		y = _mouseCurState.y * _videoMode.scaleFactor;
 
 	warpMouse(x, y);
-
-	CursorMan.showMouse(false);
-	updateScreen();
-	_overlayBackground = SDL_ConvertSurface(_hwscreen, _hwscreen->format, SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA);
-	CursorMan.showMouse(true);
 
 #ifdef USE_RGB_COLOR
 	setScreenFormat(_preferredOverlayFormat);
