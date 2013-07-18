@@ -1629,8 +1629,6 @@ void SurfaceSdlGraphicsManager::showOverlay() {
 	setScreenFormat(_preferredOverlayFormat);
 #endif
 
-	_forceFull = true;
-
 	clearOverlay();
 }
 
@@ -1653,6 +1651,7 @@ void SurfaceSdlGraphicsManager::hideOverlay() {
 
 	warpMouse(x, y);
 
+	clearOverlay();
 #ifdef USE_RGB_COLOR
 	setScreenFormat(_preferredFormat);
 #endif
@@ -1677,7 +1676,9 @@ void SurfaceSdlGraphicsManager::clearOverlay() {
 #endif
 	SDL_UnlockSurface(_overlayscreen);
 
-	SDL_BlitSurface(_overlayBackground, NULL, _overlayscreen, NULL);
+	// "Clear" the screen by blitting whatever was there "before" to _overlayscreen
+	if (SDL_BlitSurface(_overlayBackground, NULL, _overlayscreen, NULL) != 0)
+		error("SDL_BlitSurface failed: %s", SDL_GetError());
 
 	_forceFull = true;
 }
