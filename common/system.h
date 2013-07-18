@@ -192,6 +192,7 @@ protected:
 	//@}
 
 public:
+
 	/**
 	 * The following method is called once, from main.cpp, after all
 	 * config data (including command line params etc.) are fully loaded.

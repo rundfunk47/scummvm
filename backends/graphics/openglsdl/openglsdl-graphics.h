@@ -73,7 +73,6 @@ protected:
 	 * This method is invoked by loadGFXMode().
 	 */
 	void detectSupportedFormats();
-
 #endif
 
 	/**

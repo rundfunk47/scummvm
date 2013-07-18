@@ -418,7 +418,7 @@ void Engine::openMainMenuDialog() {
 		_mainMenuDialog = new MainMenuDialog(this);
 
 	setGameToLoadSlot(-1);
-	
+
 	runDialog(*_mainMenuDialog);
 
 	// Load savegame after main menu execution
@@ -435,7 +435,7 @@ void Engine::openMainMenuDialog() {
 			dialog.runModal();
 		}
 	}
-	
+
 	syncSoundSettings();
 }
 
