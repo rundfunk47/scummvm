@@ -121,7 +121,7 @@ SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSou
 #ifdef USE_OSD
 	_osdSurface(0), _osdAlpha(SDL_ALPHA_TRANSPARENT), _osdFadeStartTime(0),
 #endif
-	_hwscreen(0), _screen(0), _tmpscreen(0), _overlayBackground(0),
+	_hwscreen(0), _screen(0), _tmpscreen(0), _overlayBackground(0), _gamehwscreen(0),
 #ifdef USE_RGB_COLOR
 	_screenFormat(Graphics::PixelFormat::createFormatCLUT8()),
 	_cursorFormat(Graphics::PixelFormat::createFormatCLUT8()),
@@ -853,26 +853,24 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 		}
 	}
 
-	// FIXME: There is probably a better way of doing this
+	if (_32bitGUI) {
+		_hwscreen = SDL_SetVideoMode(_videoMode.hardwareWidth, _videoMode.hardwareHeight, 32,
+			_videoMode.fullscreen ? (SDL_FULLSCREEN|SDL_SWSURFACE) : SDL_SWSURFACE );
+	} else {
+		_hwscreen = SDL_SetVideoMode(_videoMode.hardwareWidth, _videoMode.hardwareHeight, 16,
+			_videoMode.fullscreen ? (SDL_FULLSCREEN|SDL_SWSURFACE) : SDL_SWSURFACE );
+	}
+	
+	// FIXME: There has to be a better way of doing this
 	// What we are essentially doing is creating a SDL_Surface with the requested bpp, and 
 	// then setting _preferredOverlayFormat from the properties it gets.
 
-	SDL_Surface * temphwscreen;
-
-	if (_32bitGUI) {
-		temphwscreen = SDL_SetVideoMode(_videoMode.hardwareWidth, _videoMode.hardwareHeight, 32,
-			_videoMode.fullscreen ? (SDL_FULLSCREEN|SDL_SWSURFACE) : SDL_SWSURFACE );
-	} else {
-		temphwscreen = SDL_SetVideoMode(_videoMode.hardwareWidth, _videoMode.hardwareHeight, 16,
-			_videoMode.fullscreen ? (SDL_FULLSCREEN|SDL_SWSURFACE) : SDL_SWSURFACE );
-	}
-
 	SDL_Surface * tmp = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.overlayWidth, _videoMode.overlayHeight,
-		temphwscreen->format->BytesPerPixel << 3,
-		temphwscreen->format->Rmask,
-		temphwscreen->format->Gmask,
-		temphwscreen->format->Bmask,
-		temphwscreen->format->Amask);
+		_hwscreen->format->BytesPerPixel << 3,
+		_hwscreen->format->Rmask,
+		_hwscreen->format->Gmask,
+		_hwscreen->format->Bmask,
+		_hwscreen->format->Amask);
 
 	_preferredOverlayFormat.bytesPerPixel = tmp->format->BytesPerPixel;
 
@@ -886,26 +884,21 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 	_preferredOverlayFormat.bShift = tmp->format->Bshift;
 	_preferredOverlayFormat.aShift = tmp->format->Ashift;
 
-	// Used for blitting
-	SDL_Surface * tmpgamescreen = SDL_SetVideoMode(_videoMode.hardwareWidth, _videoMode.hardwareHeight, 16,
-			_videoMode.fullscreen ? (SDL_FULLSCREEN|SDL_SWSURFACE) : SDL_SWSURFACE );
-	// Used for blitting
-	_overlayBackground = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.overlayWidth, _videoMode.overlayHeight,
-		tmpgamescreen->format->BytesPerPixel << 3,
-		tmpgamescreen->format->Rmask,
-		tmpgamescreen->format->Gmask,
-		tmpgamescreen->format->Bmask,
-		tmpgamescreen->format->Amask);
-
-	SDL_FreeSurface(tmpgamescreen);
-	temphwscreen= NULL;
-
 	SDL_FreeSurface(tmp);
 	tmp = NULL;
 
-	SDL_FreeSurface(temphwscreen);
-	temphwscreen= NULL;
-
+	// Used for blitting and setting cursor
+	_gamehwscreen = SDL_SetVideoMode(_videoMode.hardwareWidth, _videoMode.hardwareHeight, 16,
+			_videoMode.fullscreen ? (SDL_FULLSCREEN|SDL_SWSURFACE) : SDL_SWSURFACE );
+	
+	// Used for blitting
+	_overlayBackground = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.overlayWidth, _videoMode.overlayHeight,
+		_gamehwscreen->format->BytesPerPixel << 3,
+		_gamehwscreen->format->Rmask,
+		_gamehwscreen->format->Gmask,
+		_gamehwscreen->format->Bmask,
+		_gamehwscreen->format->Amask);
+	
 	//
 	// Create the surface that contains the 8 bit game data
 	//
@@ -961,12 +954,18 @@ void SurfaceSdlGraphicsManager::unloadGFXMode() {
 		_overlayscreen = NULL;
 	}
 
+	if (_overlayBackground) {
+		SDL_FreeSurface(_overlayBackground);
+		_overlayBackground = NULL;
+	}
+
 #ifdef USE_OSD
 	if (_osdSurface) {
 		SDL_FreeSurface(_osdSurface);
 		_osdSurface = NULL;
 	}
 #endif
+
 	DestroyScalers();
 }
 
@@ -1839,11 +1838,11 @@ void SurfaceSdlGraphicsManager::setMouseCursor(const void *buf, uint w, uint h, 
 		_mouseOrigSurface = SDL_CreateRGBSurface(SDL_SWSURFACE | SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA,
 						_mouseCurState.w + 2,
 						_mouseCurState.h + 2,
-						16,
-						_hwscreen->format->Rmask,
-						_hwscreen->format->Gmask,
-						_hwscreen->format->Bmask,
-						_hwscreen->format->Amask);
+						_gamehwscreen->format->BytesPerPixel << 3,
+						_gamehwscreen->format->Rmask,
+						_gamehwscreen->format->Gmask,
+						_gamehwscreen->format->Bmask,
+						_gamehwscreen->format->Amask);
 
 		if (_mouseOrigSurface == NULL)
 			error("allocating _mouseOrigSurface failed");
@@ -1976,11 +1975,11 @@ void SurfaceSdlGraphicsManager::blitCursor() {
 		_mouseSurface = SDL_CreateRGBSurface(SDL_SWSURFACE | SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA,
 						_mouseCurState.rW,
 						_mouseCurState.rH,
-						32,
-						_hwscreen->format->Rmask,
-						_hwscreen->format->Gmask,
-						_hwscreen->format->Bmask,
-						_hwscreen->format->Amask);
+						_gamehwscreen->format->BytesPerPixel << 3,
+						_gamehwscreen->format->Rmask,
+						_gamehwscreen->format->Gmask,
+						_gamehwscreen->format->Bmask,
+						_gamehwscreen->format->Amask);
 
 		if (_mouseSurface == NULL)
 			error("allocating _mouseSurface failed");

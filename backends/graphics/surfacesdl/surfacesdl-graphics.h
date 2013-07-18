@@ -167,9 +167,11 @@ protected:
 		kOSDInitialAlpha = 80			/** < Initial alpha level, in percent */
 	};
 #endif
-
 	/** Hardware screen */
 	SDL_Surface *_hwscreen;
+
+	/** Game "hardware" screen */
+	SDL_Surface *_gamehwscreen;
 
 	/** Unseen game screen */
 	SDL_Surface *_screen;
