@@ -84,7 +84,7 @@ static const int s_gfxModeSwitchTable[][4] = {
 	};
 
 #ifdef USE_SCALERS
-static int cursorStretch200To240(uint8 *buf, uint32 pitch, int width, int height, int srcX, int srcY, int origSrcY);
+static int cursorStretch200To240(uint8 *buf, uint32 pitch, int bytesPerPixel, int width, int height, int srcX, int srcY, int origSrcY);
 #endif
 
 AspectRatio::AspectRatio(int w, int h) {
@@ -1755,7 +1755,7 @@ void SurfaceSdlGraphicsManager::setMouseCursor(const void *buf, uint w, uint h, 
 		_mouseOrigSurface = SDL_CreateRGBSurface(SDL_SWSURFACE | SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA,
 						_mouseCurState.w + 2,
 						_mouseCurState.h + 2,
-						16,
+						_hwscreen->format->BitsPerPixel,
 						_hwscreen->format->Rmask,
 						_hwscreen->format->Gmask,
 						_hwscreen->format->Bmask,
@@ -1803,12 +1803,12 @@ void SurfaceSdlGraphicsManager::blitCursor() {
 		dstPtr = (byte *)_mouseOrigSurface->pixels + _mouseOrigSurface->pitch * i;
 		for (j = 0; j < w + 2; j++) {
 			*(uint16 *)dstPtr = kMouseColorKey;
-			dstPtr += 2;
+			dstPtr += _hwscreen->format->BytesPerPixel;
 		}
 	}
 
 	// Draw from [1,1] since AdvMame2x adds artefact at 0,0
-	dstPtr = (byte *)_mouseOrigSurface->pixels + _mouseOrigSurface->pitch + 2;
+	dstPtr = (byte *)_mouseOrigSurface->pixels + _mouseOrigSurface->pitch + _hwscreen->format->BytesPerPixel;
 
 	SDL_Color *palette;
 
@@ -1837,20 +1837,29 @@ void SurfaceSdlGraphicsManager::blitCursor() {
 #endif
 				color = *srcPtr;
 				if (color != _mouseKeyColor) {	// transparent, don't draw
+					if (_hwscreen->format->BytesPerPixel > 2) {
+					*(uint32 *)dstPtr = SDL_MapRGB(_mouseOrigSurface->format,
+						palette[color].r, palette[color].g, palette[color].b);
+					} else {
 					*(uint16 *)dstPtr = SDL_MapRGB(_mouseOrigSurface->format,
 						palette[color].r, palette[color].g, palette[color].b);
+					}
 				}
-				dstPtr += 2;
+				dstPtr += _hwscreen->format->BytesPerPixel;
 				srcPtr++;
 #ifdef USE_RGB_COLOR
 			}
 #endif
 		}
-		dstPtr += _mouseOrigSurface->pitch - w * 2;
+		dstPtr += _mouseOrigSurface->pitch - w * _hwscreen->format->BytesPerPixel;
 	}
 
 	int rW, rH;
 	int cursorScale;
+
+	// Workaround: Disable scalers if bpp is set to 32
+	if (_hwscreen->format->BytesPerPixel == 4)
+		_cursorDontScale = true;
 
 	if (_cursorDontScale) {
 		// Don't scale the cursor at all if the user requests this behavior.
@@ -1892,7 +1901,7 @@ void SurfaceSdlGraphicsManager::blitCursor() {
 		_mouseSurface = SDL_CreateRGBSurface(SDL_SWSURFACE | SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA,
 						_mouseCurState.rW,
 						_mouseCurState.rH,
-						16,
+						_hwscreen->format->BitsPerPixel,
 						_hwscreen->format->Rmask,
 						_hwscreen->format->Gmask,
 						_hwscreen->format->Bmask,
@@ -1921,13 +1930,14 @@ void SurfaceSdlGraphicsManager::blitCursor() {
 		scalerProc = Normal1x;
 	}
 
-	scalerProc((byte *)_mouseOrigSurface->pixels + _mouseOrigSurface->pitch + 2,
+	// HACK: Since we want have sizeof(uint32) instead of sizeof(uint16) when in 32-bit mode, we multiply the width with 2 in 32-bit mode
+	scalerProc((byte *)_mouseOrigSurface->pixels + _mouseOrigSurface->pitch + _hwscreen->format->BytesPerPixel,
 		_mouseOrigSurface->pitch, (byte *)_mouseSurface->pixels, _mouseSurface->pitch,
-		_mouseCurState.w, _mouseCurState.h);
+		_mouseCurState.w * (_hwscreen->format->BytesPerPixel >> 1), _mouseCurState.h);
 
 #ifdef USE_SCALERS
 	if (!_cursorDontScale && _videoMode.aspectRatioCorrection)
-		cursorStretch200To240((uint8 *)_mouseSurface->pixels, _mouseSurface->pitch, rW, rH1, 0, 0, 0);
+		cursorStretch200To240((uint8 *)_mouseSurface->pixels, _mouseSurface->pitch, _mouseSurface->format->BytesPerPixel, rW, rH1, 0, 0, 0);
 #endif
 
 	SDL_UnlockSurface(_mouseSurface);
@@ -1937,18 +1947,18 @@ void SurfaceSdlGraphicsManager::blitCursor() {
 #ifdef USE_SCALERS
 // Basically it is kVeryFastAndUglyAspectMode of stretch200To240 from
 // common/scale/aspect.cpp
-static int cursorStretch200To240(uint8 *buf, uint32 pitch, int width, int height, int srcX, int srcY, int origSrcY) {
+static int cursorStretch200To240(uint8 *buf, uint32 pitch, int bytesPerPixel, int width, int height, int srcX, int srcY, int origSrcY) {
 	int maxDstY = real2Aspect(origSrcY + height - 1);
 	int y;
-	const uint8 *startSrcPtr = buf + srcX * 2 + (srcY - origSrcY) * pitch;
-	uint8 *dstPtr = buf + srcX * 2 + maxDstY * pitch;
+	const uint8 *startSrcPtr = buf + srcX * bytesPerPixel + (srcY - origSrcY) * pitch;
+	uint8 *dstPtr = buf + srcX * bytesPerPixel + maxDstY * pitch;
 
 	for (y = maxDstY; y >= srcY; y--) {
 		const uint8 *srcPtr = startSrcPtr + aspect2Real(y) * pitch;
 
 		if (srcPtr == dstPtr)
 			break;
-		memcpy(dstPtr, srcPtr, width * 2);
+		memcpy(dstPtr, srcPtr, width * bytesPerPixel);
 		dstPtr -= pitch;
 	}
 
