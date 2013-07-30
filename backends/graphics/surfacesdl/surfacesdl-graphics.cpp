@@ -1839,11 +1839,11 @@ void SurfaceSdlGraphicsManager::setMouseCursor(const void *buf, uint w, uint h, 
 		_mouseOrigSurface = SDL_CreateRGBSurface(SDL_SWSURFACE | SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA,
 						_mouseCurState.w + 2,
 						_mouseCurState.h + 2,
-						_gamehwscreen->format->BytesPerPixel << 3,
-						_gamehwscreen->format->Rmask,
-						_gamehwscreen->format->Gmask,
-						_gamehwscreen->format->Bmask,
-						_gamehwscreen->format->Amask);
+						_hwscreen->format->BytesPerPixel << 3,
+						_hwscreen->format->Rmask,
+						_hwscreen->format->Gmask,
+						_hwscreen->format->Bmask,
+						_hwscreen->format->Amask);
 
 		if (_mouseOrigSurface == NULL)
 			error("allocating _mouseOrigSurface failed");
@@ -1887,12 +1887,12 @@ void SurfaceSdlGraphicsManager::blitCursor() {
 		dstPtr = (byte *)_mouseOrigSurface->pixels + _mouseOrigSurface->pitch * i;
 		for (j = 0; j < w + 2; j++) {
 			*(uint16 *)dstPtr = kMouseColorKey;
-			dstPtr += 2;
+			dstPtr += _hwscreen->format->BytesPerPixel;
 		}
 	}
 
 	// Draw from [1,1] since AdvMame2x adds artefact at 0,0
-	dstPtr = (byte *)_mouseOrigSurface->pixels + _mouseOrigSurface->pitch + 2;
+	dstPtr = (byte *)_mouseOrigSurface->pixels + _mouseOrigSurface->pitch + _hwscreen->format->BytesPerPixel;
 
 	SDL_Color *palette;
 
@@ -1921,16 +1921,21 @@ void SurfaceSdlGraphicsManager::blitCursor() {
 #endif
 				color = *srcPtr;
 				if (color != _mouseKeyColor) {	// transparent, don't draw
+					if (_hwscreen->format->BytesPerPixel > 2) {
+					*(uint32 *)dstPtr = SDL_MapRGB(_mouseOrigSurface->format,
+						palette[color].r, palette[color].g, palette[color].b);
+					} else {
 					*(uint16 *)dstPtr = SDL_MapRGB(_mouseOrigSurface->format,
 						palette[color].r, palette[color].g, palette[color].b);
+					}
 				}
-				dstPtr += 2;
+				dstPtr += _hwscreen->format->BytesPerPixel;
 				srcPtr++;
 #ifdef USE_RGB_COLOR
 			}
 #endif
 		}
-		dstPtr += _mouseOrigSurface->pitch - w * 2;
+		dstPtr += _mouseOrigSurface->pitch - w * _hwscreen->format->BytesPerPixel;
 	}
 
 	int rW, rH;
@@ -1976,11 +1981,11 @@ void SurfaceSdlGraphicsManager::blitCursor() {
 		_mouseSurface = SDL_CreateRGBSurface(SDL_SWSURFACE | SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA,
 						_mouseCurState.rW,
 						_mouseCurState.rH,
-						_gamehwscreen->format->BytesPerPixel << 3,
-						_gamehwscreen->format->Rmask,
-						_gamehwscreen->format->Gmask,
-						_gamehwscreen->format->Bmask,
-						_gamehwscreen->format->Amask);
+						_hwscreen->format->BytesPerPixel << 3,
+						_hwscreen->format->Rmask,
+						_hwscreen->format->Gmask,
+						_hwscreen->format->Bmask,
+						_hwscreen->format->Amask);
 
 		if (_mouseSurface == NULL)
 			error("allocating _mouseSurface failed");
@@ -2005,9 +2010,9 @@ void SurfaceSdlGraphicsManager::blitCursor() {
 		scalerProc = Normal1x;
 	}
 
-	scalerProc((byte *)_mouseOrigSurface->pixels + _mouseOrigSurface->pitch + 2,
+	scalerProc((byte *)_mouseOrigSurface->pixels + _mouseOrigSurface->pitch + _hwscreen->format->BytesPerPixel,
 		_mouseOrigSurface->pitch, (byte *)_mouseSurface->pixels, _mouseSurface->pitch,
-		_mouseCurState.w, _mouseCurState.h);
+		_mouseCurState.w*(_hwscreen->format->BytesPerPixel >> 1), _mouseCurState.h);
 
 #ifdef USE_SCALERS
 	if (!_cursorDontScale && _videoMode.aspectRatioCorrection)
