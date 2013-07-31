@@ -40,6 +40,7 @@
 #include "graphics/scaler.h"
 #include "graphics/scaler/aspect.h"
 #include "graphics/surface.h"
+#include "graphics/cursorman.h"
 
 static const OSystem::GraphicsMode s_supportedGraphicsModes[] = {
 	{"1x", _s("Normal (no scaling)"), GFX_NORMAL},
@@ -121,7 +122,7 @@ SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSou
 #ifdef USE_OSD
 	_osdSurface(0), _osdAlpha(SDL_ALPHA_TRANSPARENT), _osdFadeStartTime(0),
 #endif
-	_hwscreen(0), _screen(0), _tmpscreen(0),
+	_hwscreen(0), _screen(0), _tmpscreen(0), _overlaybackground(0),
 #ifdef USE_RGB_COLOR
 	_screenFormat(Graphics::PixelFormat::createFormatCLUT8()),
 	_cursorFormat(Graphics::PixelFormat::createFormatCLUT8()),
@@ -781,6 +782,19 @@ bool SurfaceSdlGraphicsManager::setSurfaceBitDepth(int bytesPerPixel) {
 		_overlayFormat.aShift = _overlayscreen->format->Ashift;
 	}
 	
+	// This surface is used for blitting game-screen onto overlay when entering a menu or the debugger while in-game
+	if (_hwscreen->format->BytesPerPixel == 2) {
+		_overlaybackground = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.overlayWidth, _videoMode.overlayHeight,
+							16,
+							_hwscreen->format->Rmask,
+							_hwscreen->format->Gmask,
+							_hwscreen->format->Bmask,
+							_hwscreen->format->Amask); 
+	
+		if (_overlaybackground == NULL)
+			error("allocating _overlaybackground failed");
+	}
+
 	_tmpscreen2 = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.overlayWidth + 3, _videoMode.overlayHeight + 3,
 						_hwscreen->format->BitsPerPixel,
 						_hwscreen->format->Rmask,
@@ -912,6 +926,19 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 	_eventSource->resetKeyboadEmulation(
 		_videoMode.screenWidth * _videoMode.scaleFactor - 1,
 		effectiveScreenHeight() - 1);
+		
+	if (_overlayVisible && _overlaybackground != NULL) {
+		// This will reset _overlaybackground when, for example, aspect ratio gets changed or fullscreen is enabled, to avoid that the game-background looks odd
+		_overlaybackground = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.overlayWidth, _videoMode.overlayHeight,
+							16,
+							_hwscreen->format->Rmask,
+							_hwscreen->format->Gmask,
+							_hwscreen->format->Bmask,
+							_hwscreen->format->Amask); 
+		
+		if (_overlaybackground == NULL)
+			error("allocating _overlaybackground failed");
+	}
 
 	return true;
 }
@@ -941,6 +968,11 @@ void SurfaceSdlGraphicsManager::unloadGFXMode() {
 		SDL_FreeSurface(_overlayscreen);
 		_overlayscreen = NULL;
 	}
+
+	if (_overlaybackground) {
+		SDL_FreeSurface(_overlaybackground);
+		_overlaybackground = NULL;
+	} 
 
 #ifdef USE_OSD
 	if (_osdSurface) {
@@ -1585,6 +1617,18 @@ void SurfaceSdlGraphicsManager::showOverlay() {
 	if (_overlayVisible)
 		return;
 
+	// Take a "picture" of the current buffer, to be displayed by clearOverlay();
+	// We also hide the cursor (if shown)
+
+	if (CursorMan.isVisible()) {
+		CursorMan.showMouse(false);
+		g_system->updateScreen();
+		_overlaybackground = SDL_ConvertSurface(_hwscreen, _hwscreen->format, SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA);
+		CursorMan.showMouse(true);
+	} else {
+		_overlaybackground = SDL_ConvertSurface(_hwscreen, _hwscreen->format, SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA);
+	}
+
 	_overlayVisible = true;
 
 	// Since resolution could change, put mouse to adjusted position
@@ -1634,28 +1678,16 @@ void SurfaceSdlGraphicsManager::clearOverlay() {
 	if (!_overlayVisible)
 		return;
 
-	// Clear the overlay by making the game screen "look through" everywhere.
-	SDL_Rect src, dst;
-	src.x = src.y = 0;
-	dst.x = dst.y = 1;
-	src.w = dst.w = _videoMode.screenWidth;
-	src.h = dst.h = _videoMode.screenHeight;
-	if (SDL_BlitSurface(_screen, &src, _tmpscreen, &dst) != 0)
-		error("SDL_BlitSurface failed: %s", SDL_GetError());
-
-	SDL_LockSurface(_tmpscreen);
-	SDL_LockSurface(_overlayscreen);
-	_scalerProc((byte *)(_tmpscreen->pixels) + _tmpscreen->pitch + 2, _tmpscreen->pitch,
-	(byte *)_overlayscreen->pixels, _overlayscreen->pitch, _videoMode.screenWidth, _videoMode.screenHeight);
-
 #ifdef USE_SCALERS
 	if (_videoMode.aspectRatioCorrection)
 		stretch200To240((uint8 *)_overlayscreen->pixels, _overlayscreen->pitch,
 						_videoMode.overlayWidth, _videoMode.screenHeight * _videoMode.scaleFactor, 0, 0, 0);
 #endif
-	SDL_UnlockSurface(_tmpscreen);
-	SDL_UnlockSurface(_overlayscreen);
 
+	// "Clear" the screen by blitting whatever was there "before" to _overlayscreen
+	if (SDL_BlitSurface(_overlaybackground, NULL, _overlayscreen, NULL) != 0)
+		error("SDL_BlitSurface failed: %s", SDL_GetError());
+		
 	_forceFull = true;
 }
 
