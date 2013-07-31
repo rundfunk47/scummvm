@@ -765,7 +765,7 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 		fixupResolutionForAspectRatio(_videoMode.desiredAspectRatio, _videoMode.hardwareWidth, _videoMode.hardwareHeight);
 	}
 
-	_hwscreen = SDL_SetVideoMode(_videoMode.hardwareWidth, _videoMode.hardwareHeight, 16,
+	_hwscreen = SDL_SetVideoMode(_videoMode.hardwareWidth, _videoMode.hardwareHeight, 32,
 		_videoMode.fullscreen ? (SDL_FULLSCREEN|SDL_SWSURFACE) : SDL_SWSURFACE
 	);
 #ifdef USE_RGB_COLOR
@@ -790,7 +790,7 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 
 	// Need some extra bytes around when using 2xSaI
 	_tmpscreen = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.screenWidth + 3, _videoMode.screenHeight + 3,
-						16,
+						_hwscreen->format->BitsPerPixel,
 						_hwscreen->format->Rmask,
 						_hwscreen->format->Gmask,
 						_hwscreen->format->Bmask,
@@ -800,7 +800,7 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 		error("allocating _tmpscreen failed");
 
 	_overlayscreen = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.overlayWidth, _videoMode.overlayHeight,
-						16,
+						_hwscreen->format->BitsPerPixel,
 						_hwscreen->format->Rmask,
 						_hwscreen->format->Gmask,
 						_hwscreen->format->Bmask,
@@ -822,7 +822,7 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 	_overlayFormat.aShift = _overlayscreen->format->Ashift;
 
 	_tmpscreen2 = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.overlayWidth + 3, _videoMode.overlayHeight + 3,
-						16,
+						_hwscreen->format->BitsPerPixel,
 						_hwscreen->format->Rmask,
 						_hwscreen->format->Gmask,
 						_hwscreen->format->Bmask,
@@ -835,7 +835,7 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 	_osdSurface = SDL_CreateRGBSurface(SDL_SWSURFACE | SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA,
 						_hwscreen->w,
 						_hwscreen->h,
-						16,
+						_hwscreen->format->BitsPerPixel,
 						_hwscreen->format->Rmask,
 						_hwscreen->format->Gmask,
 						_hwscreen->format->Bmask,
@@ -1083,8 +1083,10 @@ void SurfaceSdlGraphicsManager::internUpdateScreen() {
 					dst_y = real2Aspect(dst_y);
 
 				assert(scalerProc != NULL);
-				scalerProc((byte *)srcSurf->pixels + (r->x * 2 + 2) + (r->y + 1) * srcPitch, srcPitch,
-					(byte *)_hwscreen->pixels + rx1 * 2 + dst_y * dstPitch, dstPitch, r->w, dst_h);
+
+				// HACK: Since we want have sizeof(uint32) instead of sizeof(uint16) when in 32-bit mode, we multiply the width with 2 in 32-bit mode
+				scalerProc((byte *)srcSurf->pixels + (r->x * _hwscreen->format->BytesPerPixel + _hwscreen->format->BytesPerPixel) + (r->y + 1) * srcPitch, srcPitch,
+					(byte *)_hwscreen->pixels + rx1 * _hwscreen->format->BytesPerPixel + dst_y * dstPitch, dstPitch, r->w * (_hwscreen->format->BytesPerPixel >> 1), dst_h);
 			}
 
 			r->x = rx1;
@@ -1610,7 +1612,7 @@ void SurfaceSdlGraphicsManager::grabOverlay(void *buf, int pitch) {
 	byte *dst = (byte *)buf;
 	int h = _videoMode.overlayHeight;
 	do {
-		memcpy(dst, src, _videoMode.overlayWidth * 2);
+		memcpy(dst, src, _videoMode.overlayWidth * _hwscreen->format->BytesPerPixel);
 		src += _overlayscreen->pitch;
 		dst += pitch;
 	} while (--h);
@@ -1629,7 +1631,7 @@ void SurfaceSdlGraphicsManager::copyRectToOverlay(const void *buf, int pitch, in
 	// Clip the coordinates
 	if (x < 0) {
 		w += x;
-		src -= x * 2;
+		src -= x * _overlayscreen->format->BytesPerPixel;
 		x = 0;
 	}
 
@@ -1656,9 +1658,9 @@ void SurfaceSdlGraphicsManager::copyRectToOverlay(const void *buf, int pitch, in
 	if (SDL_LockSurface(_overlayscreen) == -1)
 		error("SDL_LockSurface failed: %s", SDL_GetError());
 
-	byte *dst = (byte *)_overlayscreen->pixels + y * _overlayscreen->pitch + x * 2;
+	byte *dst = (byte *)_overlayscreen->pixels + y * _overlayscreen->pitch + x * _overlayscreen->format->BytesPerPixel;
 	do {
-		memcpy(dst, src, w * 2);
+		memcpy(dst, src, w * _overlayscreen->format->BytesPerPixel);
 		dst += _overlayscreen->pitch;
 		src += pitch;
 	} while (--h);
