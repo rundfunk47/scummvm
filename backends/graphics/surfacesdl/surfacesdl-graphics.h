@@ -320,6 +320,7 @@ protected:
 
 	virtual void internUpdateScreen();
 
+	virtual bool setSurfaceBitDepth(int bytesPerPixel);
 	virtual bool loadGFXMode();
 	virtual void unloadGFXMode();
 	virtual bool hotswapGFXMode();

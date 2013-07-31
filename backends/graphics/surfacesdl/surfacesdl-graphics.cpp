@@ -711,6 +711,138 @@ static void fixupResolutionForAspectRatio(AspectRatio desiredAspectRatio, int &w
 	height = bestMode->h;
 }
 
+bool SurfaceSdlGraphicsManager::setSurfaceBitDepth(int bytesPerPixel) {
+	assert(bytesPerPixel == 1 || bytesPerPixel == 2 || bytesPerPixel == 4);
+	
+	//
+	// Create the surface that contains the scaled graphics
+	//
+
+	_hwscreen = SDL_SetVideoMode(_videoMode.hardwareWidth, _videoMode.hardwareHeight, bytesPerPixel*8,
+		_videoMode.fullscreen ? (SDL_FULLSCREEN|SDL_SWSURFACE) : SDL_SWSURFACE
+	);
+	
+	if (_hwscreen->format->BytesPerPixel == 2) {
+		// Only perform this step while using 16-bits, since some engines will use the first in the list as their output-mode
+		#ifdef USE_RGB_COLOR
+			detectSupportedFormats();
+		#endif
+	}
+
+	if (_hwscreen == NULL) {
+		// DON'T use error(), as this tries to bring up the debug
+		// console, which WON'T WORK now that _hwscreen is hosed.
+
+		if (!_oldVideoMode.setup) {
+			warning("SDL_SetVideoMode says we can't switch to that mode (%s)", SDL_GetError());
+			g_system->quit();
+		} else {
+			return false;
+		}
+	}
+
+	//
+	// Create the surface used for the graphics before scaling, and also the overlay
+	//
+
+	// Need some extra bytes around when using 2xSaI
+	_tmpscreen = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.screenWidth + 3, _videoMode.screenHeight + 3,
+						_hwscreen->format->BitsPerPixel,
+						_hwscreen->format->Rmask,
+						_hwscreen->format->Gmask,
+						_hwscreen->format->Bmask,
+						_hwscreen->format->Amask);
+
+	if (_tmpscreen == NULL)
+		error("allocating _tmpscreen failed");
+
+	_overlayscreen = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.overlayWidth, _videoMode.overlayHeight,
+						_hwscreen->format->BitsPerPixel,
+						_hwscreen->format->Rmask,
+						_hwscreen->format->Gmask,
+						_hwscreen->format->Bmask,
+						_hwscreen->format->Amask);
+
+	if (_overlayscreen == NULL)
+		error("allocating _overlayscreen failed");
+
+	if (_overlayscreen->format->BytesPerPixel == 4) {
+		// Only perform these actions when an overlay is shown (e.g. avoid that they get called while in a game)
+		_overlayFormat.bytesPerPixel = _overlayscreen->format->BytesPerPixel;
+
+		_overlayFormat.rLoss = _overlayscreen->format->Rloss;
+		_overlayFormat.gLoss = _overlayscreen->format->Gloss;
+		_overlayFormat.bLoss = _overlayscreen->format->Bloss;
+		_overlayFormat.aLoss = _overlayscreen->format->Aloss;
+
+		_overlayFormat.rShift = _overlayscreen->format->Rshift;
+		_overlayFormat.gShift = _overlayscreen->format->Gshift;
+		_overlayFormat.bShift = _overlayscreen->format->Bshift;
+		_overlayFormat.aShift = _overlayscreen->format->Ashift;
+	}
+	
+	_tmpscreen2 = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.overlayWidth + 3, _videoMode.overlayHeight + 3,
+						_hwscreen->format->BitsPerPixel,
+						_hwscreen->format->Rmask,
+						_hwscreen->format->Gmask,
+						_hwscreen->format->Bmask,
+						_hwscreen->format->Amask);
+
+	if (_tmpscreen2 == NULL)
+		error("allocating _tmpscreen2 failed");
+
+#ifdef USE_OSD
+	_osdSurface = SDL_CreateRGBSurface(SDL_SWSURFACE | SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA,
+						_hwscreen->w,
+						_hwscreen->h,
+						_hwscreen->format->BitsPerPixel,
+						_hwscreen->format->Rmask,
+						_hwscreen->format->Gmask,
+						_hwscreen->format->Bmask,
+						_hwscreen->format->Amask);
+	if (_osdSurface == NULL)
+		error("allocating _osdSurface failed");
+	SDL_SetColorKey(_osdSurface, SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA, kOSDColorKey);
+#endif
+
+	// Code to set up cursor needed here, since a call to setMouseCursor is not generated if, for example, aspect ratio change or fullscreen mode is activated while an overlay is being shown
+	_mouseSurface = SDL_CreateRGBSurface(SDL_SWSURFACE | SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA,
+					_mouseCurState.rW,
+					_mouseCurState.rH,
+					_hwscreen->format->BitsPerPixel,
+					_hwscreen->format->Rmask,
+					_hwscreen->format->Gmask,
+					_hwscreen->format->Bmask,
+					_hwscreen->format->Amask);
+
+	if (_mouseSurface == NULL)
+		error("allocating _mouseSurface failed");
+
+	SDL_SetColorKey(_mouseSurface, SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA, kMouseColorKey);
+	
+	_mouseOrigSurface = SDL_CreateRGBSurface(SDL_SWSURFACE | SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA,
+					_mouseCurState.w + 2,
+					_mouseCurState.h + 2,
+					_hwscreen->format->BitsPerPixel,
+					_hwscreen->format->Rmask,
+					_hwscreen->format->Gmask,
+					_hwscreen->format->Bmask,
+					_hwscreen->format->Amask);
+	
+	if (_mouseOrigSurface == NULL)
+		error("allocating _mouseOrigSurface failed");
+	
+	blitCursor();
+
+	// Distinguish 555 and 565 mode
+	if (_hwscreen->format->Rmask == 0x7C00)
+		InitScalers(555);
+	else
+		InitScalers(565);
+
+	return true;
+}
+
 bool SurfaceSdlGraphicsManager::loadGFXMode() {
 	_forceFull = true;
 
@@ -757,103 +889,29 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 	// SDL_SetColors does nothing for non indexed surfaces.
 	SDL_SetColors(_screen, _currentPalette, 0, 256);
 
-	//
-	// Create the surface that contains the scaled graphics in 16 bit mode
-	//
-
 	if (_videoMode.fullscreen) {
 		fixupResolutionForAspectRatio(_videoMode.desiredAspectRatio, _videoMode.hardwareWidth, _videoMode.hardwareHeight);
 	}
 
-	_hwscreen = SDL_SetVideoMode(_videoMode.hardwareWidth, _videoMode.hardwareHeight, 32,
-		_videoMode.fullscreen ? (SDL_FULLSCREEN|SDL_SWSURFACE) : SDL_SWSURFACE
-	);
-#ifdef USE_RGB_COLOR
-	detectSupportedFormats();
-#endif
-
-	if (_hwscreen == NULL) {
-		// DON'T use error(), as this tries to bring up the debug
-		// console, which WON'T WORK now that _hwscreen is hosed.
-
-		if (!_oldVideoMode.setup) {
-			warning("SDL_SetVideoMode says we can't switch to that mode (%s)", SDL_GetError());
-			g_system->quit();
-		} else {
+	if (_overlayVisible || !_videoMode.setup) {
+		// If first run, or if an overlay is being shown, use 32-bits
+		if (!setSurfaceBitDepth(4))
 			return false;
-		}
+	} else {
+		// Use 16-bits if running a game
+		if (!setSurfaceBitDepth(2))
+			return false;
 	}
-
-	//
-	// Create the surface used for the graphics in 16 bit before scaling, and also the overlay
-	//
-
-	// Need some extra bytes around when using 2xSaI
-	_tmpscreen = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.screenWidth + 3, _videoMode.screenHeight + 3,
-						_hwscreen->format->BitsPerPixel,
-						_hwscreen->format->Rmask,
-						_hwscreen->format->Gmask,
-						_hwscreen->format->Bmask,
-						_hwscreen->format->Amask);
-
-	if (_tmpscreen == NULL)
-		error("allocating _tmpscreen failed");
-
-	_overlayscreen = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.overlayWidth, _videoMode.overlayHeight,
-						_hwscreen->format->BitsPerPixel,
-						_hwscreen->format->Rmask,
-						_hwscreen->format->Gmask,
-						_hwscreen->format->Bmask,
-						_hwscreen->format->Amask);
-
-	if (_overlayscreen == NULL)
-		error("allocating _overlayscreen failed");
-
-	_overlayFormat.bytesPerPixel = _overlayscreen->format->BytesPerPixel;
-
-	_overlayFormat.rLoss = _overlayscreen->format->Rloss;
-	_overlayFormat.gLoss = _overlayscreen->format->Gloss;
-	_overlayFormat.bLoss = _overlayscreen->format->Bloss;
-	_overlayFormat.aLoss = _overlayscreen->format->Aloss;
-
-	_overlayFormat.rShift = _overlayscreen->format->Rshift;
-	_overlayFormat.gShift = _overlayscreen->format->Gshift;
-	_overlayFormat.bShift = _overlayscreen->format->Bshift;
-	_overlayFormat.aShift = _overlayscreen->format->Ashift;
-
-	_tmpscreen2 = SDL_CreateRGBSurface(SDL_SWSURFACE, _videoMode.overlayWidth + 3, _videoMode.overlayHeight + 3,
-						_hwscreen->format->BitsPerPixel,
-						_hwscreen->format->Rmask,
-						_hwscreen->format->Gmask,
-						_hwscreen->format->Bmask,
-						_hwscreen->format->Amask);
-
-	if (_tmpscreen2 == NULL)
-		error("allocating _tmpscreen2 failed");
-
-#ifdef USE_OSD
-	_osdSurface = SDL_CreateRGBSurface(SDL_SWSURFACE | SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA,
-						_hwscreen->w,
-						_hwscreen->h,
-						_hwscreen->format->BitsPerPixel,
-						_hwscreen->format->Rmask,
-						_hwscreen->format->Gmask,
-						_hwscreen->format->Bmask,
-						_hwscreen->format->Amask);
-	if (_osdSurface == NULL)
-		error("allocating _osdSurface failed");
-	SDL_SetColorKey(_osdSurface, SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA, kOSDColorKey);
-#endif
-
+	
+	// If we start with a game, reset bitdepth to 2. Having this after already initializing it with 4bpp will ensure that everything is setup nicely
+	if (ConfMan.getActiveDomain() && !_videoMode.setup) {
+		if (!setSurfaceBitDepth(2))
+			return false;
+	}
+	
 	_eventSource->resetKeyboadEmulation(
 		_videoMode.screenWidth * _videoMode.scaleFactor - 1,
 		effectiveScreenHeight() - 1);
-
-	// Distinguish 555 and 565 mode
-	if (_hwscreen->format->Rmask == 0x7C00)
-		InitScalers(555);
-	else
-		InitScalers(565);
 
 	return true;
 }
@@ -1537,6 +1595,7 @@ void SurfaceSdlGraphicsManager::showOverlay() {
 	else
 		y = _mouseCurState.y * _videoMode.scaleFactor;
 
+	setSurfaceBitDepth(4);
 	warpMouse(x, y);
 
 	clearOverlay();
@@ -1562,6 +1621,7 @@ void SurfaceSdlGraphicsManager::hideOverlay() {
 	warpMouse(x, y);
 
 	clearOverlay();
+	setSurfaceBitDepth(2);
 
 	_forceFull = true;
 }
