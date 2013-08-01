@@ -172,6 +172,7 @@ void registerDefaults() {
 	ConfMan.registerDefault("gfx_mode", "normal");
 	ConfMan.registerDefault("render_mode", "default");
 	ConfMan.registerDefault("desired_screen_aspect_ratio", "auto");
+	ConfMan.registerDefault("output_32bpp", true);
 
 	// Sound & Music
 	ConfMan.registerDefault("music_volume", 192);

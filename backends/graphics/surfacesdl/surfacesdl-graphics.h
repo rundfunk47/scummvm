@@ -227,6 +227,8 @@ protected:
 		Graphics::PixelFormat format;
 #endif
 	};
+	bool _use32bppGUI;
+
 	VideoState _videoMode, _oldVideoMode;
 
 	/** Force full redraw on next updateScreen */

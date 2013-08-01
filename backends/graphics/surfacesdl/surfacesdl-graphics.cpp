@@ -189,6 +189,7 @@ SurfaceSdlGraphicsManager::SurfaceSdlGraphicsManager(SdlEventSource *sdlEventSou
 #else
 	_videoMode.fullscreen = true;
 #endif
+	_use32bppGUI = ConfMan.getBool("output_32bpp");
 }
 
 SurfaceSdlGraphicsManager::~SurfaceSdlGraphicsManager() {
@@ -220,6 +221,7 @@ bool SurfaceSdlGraphicsManager::hasFeature(OSystem::Feature f) {
 		(f == OSystem::kFeatureFullscreenMode) ||
 		(f == OSystem::kFeatureAspectRatioCorrection) ||
 		(f == OSystem::kFeatureCursorPalette) ||
+		(f == OSystem::kFeature32bppOutput) ||
 		(f == OSystem::kFeatureIconifyWindow);
 }
 
@@ -234,6 +236,9 @@ void SurfaceSdlGraphicsManager::setFeatureState(OSystem::Feature f, bool enable)
 	case OSystem::kFeatureCursorPalette:
 		_cursorPaletteDisabled = !enable;
 		blitCursor();
+		break;
+	case OSystem::kFeature32bppOutput:
+		_use32bppGUI = enable;
 		break;
 	case OSystem::kFeatureIconifyWindow:
 		if (enable)
@@ -257,6 +262,8 @@ bool SurfaceSdlGraphicsManager::getFeatureState(OSystem::Feature f) {
 		return _videoMode.aspectRatioCorrection;
 	case OSystem::kFeatureCursorPalette:
 		return !_cursorPaletteDisabled;
+	case OSystem::kFeature32bppOutput:
+		return _use32bppGUI;
 	default:
 		return false;
 	}
@@ -713,12 +720,13 @@ static void fixupResolutionForAspectRatio(AspectRatio desiredAspectRatio, int &w
 }
 
 bool SurfaceSdlGraphicsManager::setSurfaceBitDepth(int bytesPerPixel) {
-	assert(bytesPerPixel == 1 || bytesPerPixel == 2 || bytesPerPixel == 4);
+	assert(bytesPerPixel == 0 || bytesPerPixel == 1 || bytesPerPixel == 2 || bytesPerPixel == 4);
 	
 	//
 	// Create the surface that contains the scaled graphics
 	//
 
+	// If SDL_SetVideoMode is created with a bpp of 0, the best possible bit-depth will be used
 	_hwscreen = SDL_SetVideoMode(_videoMode.hardwareWidth, _videoMode.hardwareHeight, bytesPerPixel*8,
 		_videoMode.fullscreen ? (SDL_FULLSCREEN|SDL_SWSURFACE) : SDL_SWSURFACE
 	);
@@ -740,6 +748,13 @@ bool SurfaceSdlGraphicsManager::setSurfaceBitDepth(int bytesPerPixel) {
 		} else {
 			return false;
 		}
+	}
+
+	if (bytesPerPixel == 0) {
+		if (_hwscreen->format->BytesPerPixel <= 2)
+			setFeatureState(OSystem::kFeature32bppOutput, false);
+		else
+			setFeatureState(OSystem::kFeature32bppOutput, true);
 	}
 
 	//
@@ -767,7 +782,7 @@ bool SurfaceSdlGraphicsManager::setSurfaceBitDepth(int bytesPerPixel) {
 	if (_overlayscreen == NULL)
 		error("allocating _overlayscreen failed");
 
-	if (_overlayscreen->format->BytesPerPixel == 4) {
+	if (!_use32bppGUI || _overlayscreen->format->BytesPerPixel == 4) {
 		// Only perform these actions when an overlay is shown (e.g. avoid that they get called while in a game)
 		_overlayFormat.bytesPerPixel = _overlayscreen->format->BytesPerPixel;
 
@@ -907,8 +922,11 @@ bool SurfaceSdlGraphicsManager::loadGFXMode() {
 		fixupResolutionForAspectRatio(_videoMode.desiredAspectRatio, _videoMode.hardwareWidth, _videoMode.hardwareHeight);
 	}
 
-	if (_overlayVisible || !_videoMode.setup) {
-		// If first run, or if an overlay is being shown, use 32-bits
+	if (!_videoMode.setup && _use32bppGUI) {
+		// Standard case, take the best available video mode
+		if (!setSurfaceBitDepth(0))
+			return false;
+	} else if (_use32bppGUI && _overlayVisible) {
 		if (!setSurfaceBitDepth(4))
 			return false;
 	} else {
@@ -1639,7 +1657,9 @@ void SurfaceSdlGraphicsManager::showOverlay() {
 	else
 		y = _mouseCurState.y * _videoMode.scaleFactor;
 
-	setSurfaceBitDepth(4);
+	if (_use32bppGUI)
+		setSurfaceBitDepth(4);
+	
 	warpMouse(x, y);
 
 	clearOverlay();
@@ -1665,7 +1685,8 @@ void SurfaceSdlGraphicsManager::hideOverlay() {
 	warpMouse(x, y);
 
 	clearOverlay();
-	setSurfaceBitDepth(2);
+	if (_use32bppGUI)
+		setSurfaceBitDepth(2);
 
 	_forceFull = true;
 }

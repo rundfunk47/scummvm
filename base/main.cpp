@@ -256,6 +256,8 @@ static void setupGraphics(OSystem &system) {
 			system.setFeatureState(OSystem::kFeatureAspectRatioCorrection, ConfMan.getBool("aspect_ratio"));
 		if (ConfMan.hasKey("fullscreen"))
 			system.setFeatureState(OSystem::kFeatureFullscreenMode, ConfMan.getBool("fullscreen"));
+		if (ConfMan.hasKey("output_32bpp"))
+			system.setFeatureState(OSystem::kFeature32bppOutput, ConfMan.getBool("output_32bpp"));
 	system.endGFXTransaction();
 
 	// When starting up launcher for the first time, the user might have specified

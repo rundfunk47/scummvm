@@ -283,10 +283,16 @@ VectorRenderer *createRenderer(int mode) {
 	PixelFormat format = g_system->getOverlayFormat();
 	switch (mode) {
 	case GUI::ThemeEngine::kGfxStandard:
-		return new VectorRendererSpec<uint32>(format);
+		if (g_system->getFeatureState(OSystem::kFeature32bppOutput))
+			return new VectorRendererSpec<uint32>(format);
+		else
+			return new VectorRendererSpec<uint16>(format);
 #ifndef DISABLE_FANCY_THEMES
 	case GUI::ThemeEngine::kGfxAntialias:
-		return new VectorRendererAA<uint32>(format);
+		if (g_system->getFeatureState(OSystem::kFeature32bppOutput))
+			return new VectorRendererSpec<uint32>(format);
+		else
+			return new VectorRendererSpec<uint16>(format);
 #endif
 	default:
 		break;

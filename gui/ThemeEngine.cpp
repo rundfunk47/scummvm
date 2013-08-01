@@ -496,7 +496,10 @@ void ThemeEngine::setGraphicsMode(GraphicsMode mode) {
 #ifndef DISABLE_FANCY_THEMES
 	case kGfxAntialias:
 #endif
-		_bytesPerPixel = sizeof(uint32);
+		if (g_system->getFeatureState(OSystem::kFeature32bppOutput))
+			_bytesPerPixel = sizeof(uint32);
+		else
+			_bytesPerPixel = sizeof(uint16);
 		break;
 
 	default:

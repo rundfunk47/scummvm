@@ -314,7 +314,15 @@ public:
 		 *
 		 * This feature has no associated state.
 		 */
-		kFeatureDisplayLogFile
+		kFeatureDisplayLogFile,
+
+		/**
+		 * The prescence of this feature indicates that the backend is capable of
+		 * outputting 32 bit graphics. Note that the precense of this flag does
+		 * not necessarily indicate that the 32-bit color-palette will be used, only
+		 * that we wish to initialize it as such.
+		 */
+		 kFeature32bppOutput
 	};
 
 	/**
