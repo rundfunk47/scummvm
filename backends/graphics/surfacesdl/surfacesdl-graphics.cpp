@@ -1638,13 +1638,15 @@ void SurfaceSdlGraphicsManager::showOverlay() {
 	// Take a "picture" of the current buffer, to be displayed by clearOverlay();
 	// We also hide the cursor (if shown)
 
-	if (CursorMan.isVisible()) {
-		CursorMan.showMouse(false);
-		g_system->updateScreen();
-		_overlaybackground = SDL_ConvertSurface(_hwscreen, _hwscreen->format, SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA);
-		CursorMan.showMouse(true);
-	} else {
-		_overlaybackground = SDL_ConvertSurface(_hwscreen, _hwscreen->format, SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA);
+	if (_overlaybackground) {
+		if (CursorMan.isVisible()) {
+			CursorMan.showMouse(false);
+			g_system->updateScreen();
+			_overlaybackground = SDL_ConvertSurface(_hwscreen, _hwscreen->format, SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA);
+			CursorMan.showMouse(true);
+		} else {
+			_overlaybackground = SDL_ConvertSurface(_hwscreen, _hwscreen->format, SDL_RLEACCEL | SDL_SRCCOLORKEY | SDL_SRCALPHA);
+		}
 	}
 
 	_overlayVisible = true;
@@ -1706,9 +1708,11 @@ void SurfaceSdlGraphicsManager::clearOverlay() {
 #endif
 
 	// "Clear" the screen by blitting whatever was there "before" to _overlayscreen
-	if (SDL_BlitSurface(_overlaybackground, NULL, _overlayscreen, NULL) != 0)
-		error("SDL_BlitSurface failed: %s", SDL_GetError());
-		
+	if (_overlaybackground) {
+		if (SDL_BlitSurface(_overlaybackground, NULL, _overlayscreen, NULL) != 0)
+			error("SDL_BlitSurface failed: %s", SDL_GetError());
+	}
+
 	_forceFull = true;
 }
 
