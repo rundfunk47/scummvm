@@ -548,34 +548,30 @@ void OSystem_Android::pushEvent(int type, int arg1, int arg2, int arg3,
 		}
 
 	case JE_DOWN:
-		_touch_pt_down = getEventManager()->getMousePos();
-		_touch_pt_scroll.x = -1;
-		_touch_pt_scroll.y = -1;
-		break;
-
-	case JE_SCROLL:
-		e.type = Common::EVENT_MOUSEMOVE;
-
-		if (_touchpad_mode) {
-			if (_touch_pt_scroll.x == -1 && _touch_pt_scroll.y == -1) {
-				_touch_pt_scroll.x = arg3;
-				_touch_pt_scroll.y = arg4;
-				return;
-			}
-
-			scaleMouse(e.mouse, arg3 - _touch_pt_scroll.x,
-						arg4 - _touch_pt_scroll.y, false, true);
-			e.mouse += _touch_pt_down;
-			clipMouse(e.mouse);
-		} else {
-			scaleMouse(e.mouse, arg3, arg4);
-			clipMouse(e.mouse);
-		}
-
+		e.type = Common::EVENT_TAPDOWN;
+		
+		scaleMouse(e.finger[0].position, arg1, arg2);
+		_touch_pt_scroll.x = e.finger[0].position.x;
+		_touch_pt_scroll.y = e.finger[0].position.y;
 		lockMutex(_event_queue_lock);
 		_event_queue.push(e);
 		unlockMutex(_event_queue_lock);
+		break;
 
+	case JE_SCROLL:
+		e.type = Common::EVENT_FINGERMOVE;
+		// arg1 and arg2 contains original finger position
+		scaleMouse(e.finger[0].position, arg3, arg4);
+		
+		e.finger[0].deltax = e.finger[0].position.x - _touch_pt_scroll.x;
+		e.finger[0].deltay = e.finger[0].position.y - _touch_pt_scroll.y;
+
+		_touch_pt_scroll.x = e.finger[0].position.x;
+		_touch_pt_scroll.y = e.finger[0].position.y;
+		
+		lockMutex(_event_queue_lock);
+		_event_queue.push(e);
+		unlockMutex(_event_queue_lock);
 		return;
 
 	case JE_TAP:
@@ -584,103 +580,48 @@ void OSystem_Android::pushEvent(int type, int arg1, int arg2, int arg3,
 			return;
 		}
 
-		e.type = Common::EVENT_MOUSEMOVE;
+		Common::EventType down, up;
 
-		if (_touchpad_mode) {
-			e.mouse = getEventManager()->getMousePos();
+		// TODO put these values in some option dlg?
+		if (arg3 > 1000) {
+			down = Common::EVENT_SIMULATE_MBUTTONDOWN;
+			up = Common::EVENT_SIMULATE_MBUTTONUP;
+		} else if (arg3 > 500) {
+			down = Common::EVENT_SIMULATE_RBUTTONDOWN;
+			up = Common::EVENT_SIMULATE_RBUTTONUP;
 		} else {
-			scaleMouse(e.mouse, arg1, arg2);
-			clipMouse(e.mouse);
+			// Note: SINGLETAP is used by UI aswell
+			// TAPDOWN cannot be used since it is called when the
+			// user touches the screen
+			down = Common::EVENT_SIMULATE_LBUTTONDOWN;
+			up = Common::EVENT_SINGLETAP;
 		}
+		scaleMouse(e.finger[0].position, arg1, arg2);
+		lockMutex(_event_queue_lock);
 
-		{
-			Common::EventType down, up;
+		if (_queuedEventTime)
+			_event_queue.push(_queuedEvent);
 
-			// TODO put these values in some option dlg?
-			if (arg3 > 1000) {
-				down = Common::EVENT_MBUTTONDOWN;
-				up = Common::EVENT_MBUTTONUP;
-			} else if (arg3 > 500) {
-				down = Common::EVENT_RBUTTONDOWN;
-				up = Common::EVENT_RBUTTONUP;
-			} else {
-				down = Common::EVENT_LBUTTONDOWN;
-				up = Common::EVENT_LBUTTONUP;
-			}
+		e.type = down;
+		_event_queue.push(e);
+		
+		e.type = up;
+		_queuedEvent = e;
+		_queuedEventTime = getMillis() + kQueuedInputEventDelay;
 
-			lockMutex(_event_queue_lock);
-
-			if (_queuedEventTime)
-				_event_queue.push(_queuedEvent);
-
-			if (!_touchpad_mode)
-				_event_queue.push(e);
-
-			e.type = down;
-			_event_queue.push(e);
-
-			e.type = up;
-			_queuedEvent = e;
-			_queuedEventTime = getMillis() + kQueuedInputEventDelay;
-
-			unlockMutex(_event_queue_lock);
-		}
-
+		unlockMutex(_event_queue_lock);
 		return;
 
 	case JE_DOUBLE_TAP:
-		e.type = Common::EVENT_MOUSEMOVE;
-
-		if (_touchpad_mode) {
-			e.mouse = getEventManager()->getMousePos();
-		} else {
-			scaleMouse(e.mouse, arg1, arg2);
-			clipMouse(e.mouse);
-		}
-
-		{
-			Common::EventType dptype = Common::EVENT_INVALID;
-
-			switch (arg3) {
-			case JACTION_DOWN:
-				dptype = Common::EVENT_LBUTTONDOWN;
-				_touch_pt_dt.x = -1;
-				_touch_pt_dt.y = -1;
-				break;
-			case JACTION_UP:
-				dptype = Common::EVENT_LBUTTONUP;
-				break;
-			// held and moved
-			case JACTION_MULTIPLE:
-				if (_touch_pt_dt.x == -1 && _touch_pt_dt.y == -1) {
-					_touch_pt_dt.x = arg1;
-					_touch_pt_dt.y = arg2;
-					return;
-				}
-
-				dptype = Common::EVENT_MOUSEMOVE;
-
-				if (_touchpad_mode) {
-					scaleMouse(e.mouse, arg1 - _touch_pt_dt.x,
-								arg2 - _touch_pt_dt.y, false, true);
-					e.mouse += _touch_pt_down;
-
-					clipMouse(e.mouse);
-				}
-
-				break;
-			default:
-				LOGE("unhandled jaction on double tap: %d", arg3);
-				return;
-			}
-
+		switch(arg3) {
+		case JACTION_UP:
+			e.type = Common::EVENT_DOUBLETAP;
+			scaleMouse(e.finger[0].position, arg1, arg2);
 			lockMutex(_event_queue_lock);
 			_event_queue.push(e);
-			e.type = dptype;
-			_event_queue.push(e);
 			unlockMutex(_event_queue_lock);
+			break;
 		}
-
 		return;
 
 	case JE_MULTI:
