@@ -109,6 +109,7 @@ protected:
 #endif
 
 	Widget *findWidget(int x, int y); // Find the widget at pos x,y if any
+	Widget *findDragableWidget(int x, int y); // Find the widget at pos x,y if any
 	Widget *findWidget(const char *name);
 	void removeWidget(Widget *widget);
 

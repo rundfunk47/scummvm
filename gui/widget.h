@@ -54,7 +54,11 @@ enum {
 	// The PopUpWidget for example does not want this behavior, since the
 	// mouse down will open up a new dialog which silently eats the mouse
 	// up event for its own purposes.
-	WIDGET_IGNORE_DRAG	= 1 << 10
+	WIDGET_IGNORE_DRAG	= 1 << 10,
+	// Usually widgets inside of widgets (containers) will eat up all
+	// finger-drag - events. Since we want the container to be scrollable,
+	// we want these events to be parsed by the container.
+	WIDGET_DRAGABLE_CONTAINER	= 1 << 11
 };
 
 enum {
@@ -97,6 +101,7 @@ private:
 
 public:
 	static Widget *findWidgetInChain(Widget *start, int x, int y);
+	static Widget *findDragableWidgetInChain(Widget *start, int x, int y);
 	static Widget *findWidgetInChain(Widget *start, const char *name);
 
 public:

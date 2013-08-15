@@ -139,6 +139,29 @@ Widget *Widget::findWidgetInChain(Widget *w, int x, int y) {
 	return w;
 }
 
+Widget *Widget::findDragableWidgetInChain(Widget *w, int x, int y) {
+
+	Widget *saved = w;
+
+	while (w) {
+		// Stop as soon as we find a widget that contains the point (x,y)
+		// We prioritize widgets that have the container-flag
+		if (x >= w->_x && x < w->_x + w->_w && y >= w->_y && y < w->_y + w->_h) {
+			saved = w;
+			if ((w->getFlags() & WIDGET_DRAGABLE_CONTAINER))
+				break;
+		}
+		w = w->_next;
+	}
+
+	if (saved) {
+		if ((saved->getFlags() & WIDGET_DRAGABLE_CONTAINER))
+			return saved;
+		saved = saved->findWidget(x - saved->_x, y - saved->_y);
+	}
+	return saved;
+}
+
 Widget *Widget::findWidgetInChain(Widget *w, const char *name) {
 	while (w) {
 		if (w->_name == name) {

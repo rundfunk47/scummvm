@@ -234,7 +234,7 @@ void ThemeItemDrawData::drawSelf(bool draw, bool restore) {
 	if (restore)
 		_engine->restoreBackground(extendedRect);
 
-	if (draw) {
+	if (draw || !_drawableArea.isEmpty()) {
 		Common::List<Graphics::DrawStep>::const_iterator step;
 		for (step = _data->_steps.begin(); step != _data->_steps.end(); ++step)
 			_engine->renderer()->drawStep(_area, *step, _dynamicData, _drawableArea);
@@ -829,6 +829,18 @@ void ThemeEngine::queueDD(DrawData type, const Common::Rect &r, uint32 dynamic, 
 		area.clip(_screen.w, _screen.h);
 
 	ThemeItemDrawData *q = new ThemeItemDrawData(this, _widgets[type], area, dynamic, drawableArea);
+	
+	// "Always" redraw items with a specified drawable area, since it is
+	// assumed they can be moved
+	if (!drawableArea.isEmpty()) {
+		if (_buffering)
+			_screenQueue.push_back(q);
+		else {
+			q->drawSelf(true, false);
+			delete q;
+		}
+		return;
+	}
 
 	if (_buffering) {
 		if (_widgets[type]->_buffer) {
