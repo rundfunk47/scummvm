@@ -24,6 +24,7 @@ MODULE_OBJS := \
 	ThemeParser.o \
 	Tooltip.o \
 	widget.o \
+	widgets/canvas.o \
 	widgets/editable.o \
 	widgets/edittext.o \
 	widgets/list.o \

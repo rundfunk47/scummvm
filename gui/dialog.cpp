@@ -220,9 +220,9 @@ void Dialog::handleFingerMoved(int x, int y, int deltax, int deltay, int button)
 		w->handleFingerMoved(x - wx, y - wy, deltax, deltay, button);
 	}
 
-	if (!_dragWidget || !(_dragWidget->getFlags() & WIDGET_TRACK_MOUSE))
-		w = findWidget(x, y);
-	else
+	if (!_dragWidget || !(_dragWidget->getFlags() & WIDGET_TRACK_MOUSE)) {
+		w = findDragableWidget(x, y);
+	} else
 		w = _dragWidget;
 
 	// We only sent mouse move events when the widget requests to be informed about them.
@@ -233,6 +233,7 @@ void Dialog::handleFingerMoved(int x, int y, int deltax, int deltay, int button)
 #endif
 
 void Dialog::handleMouseDown(int x, int y, int button, int clickCount) {
+
 	Widget *w;
 
 	w = findWidget(x, y);
@@ -280,7 +281,7 @@ void Dialog::handleMouseWheel(int x, int y, int direction) {
 	// the mouse wheel to primarily affect the widget the mouse is at than
 	// the widget that happens to be focused.
 
-	w = findWidget(x, y);
+	w = findDragableWidget(x, y);
 	if (!w)
 		w = _focusedWidget;
 	if (w)
@@ -403,6 +404,11 @@ void Dialog::handleOtherEvent(Common::Event evt) { }
 Widget *Dialog::findWidget(int x, int y) {
 	return Widget::findWidgetInChain(_firstWidget, x, y);
 }
+
+Widget *Dialog::findDragableWidget(int x, int y) {
+	return Widget::findDragableWidgetInChain(_firstWidget, x, y);
+}
+
 
 Widget *Dialog::findWidget(const char *name) {
 	return Widget::findWidgetInChain(_firstWidget, name);
