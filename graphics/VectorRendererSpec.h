@@ -50,14 +50,14 @@ class VectorRendererSpec : public VectorRenderer {
 public:
 	VectorRendererSpec(PixelFormat format);
 
-	void drawLine(int x1, int y1, int x2, int y2);
-	void drawCircle(int x, int y, int r);
-	void drawSquare(int x, int y, int w, int h);
-	void drawRoundedSquare(int x, int y, int r, int w, int h);
-	void drawTriangle(int x, int y, int base, int height, TriangleOrientation orient);
-	void drawTab(int x, int y, int r, int w, int h);
-	void drawBeveledSquare(int x, int y, int w, int h, int bevel) {
-		drawBevelSquareAlg(x, y, w, h, bevel, _bevelColor, _fgColor, Base::_fillMode != kFillDisabled);
+	void drawLine(Graphics::Surface *dst, int x1, int y1, int x2, int y2);
+	void drawCircle(Graphics::Surface *dst, int x, int y, int r);
+	void drawSquare(Graphics::Surface *dst, int x, int y, int w, int h);
+	void drawRoundedSquare(Graphics::Surface *dst, int x, int y, int r, int w, int h);
+	void drawTriangle(Graphics::Surface *dst, int x, int y, int base, int height, TriangleOrientation orient);
+	void drawTab(Graphics::Surface *dst, int x, int y, int r, int w, int h);
+	void drawBeveledSquare(Graphics::Surface *dst, int x, int y, int w, int h, int bevel) {
+		drawBevelSquareAlg(dst, x, y, w, h, bevel, _bevelColor, _fgColor, Base::_fillMode != kFillDisabled);
 	}
 	void drawString(const Graphics::Font *font, const Common::String &text,
 					const Common::Rect &area, Graphics::TextAlign alignH,
@@ -71,10 +71,11 @@ public:
 	void copyFrame(OSystem *sys, const Common::Rect &r);
 	void copyWholeFrame(OSystem *sys) { copyFrame(sys, Common::Rect(0, 0, _activeSurface->w, _activeSurface->h)); }
 
-	void fillSurface();
+	void fillSurface(Graphics::Surface *dst);
 	void blitSurface(const Graphics::Surface *source, const Common::Rect &r);
 	void blitSubSurface(const Graphics::Surface *source, const Common::Rect &r);
 	void blitAlphaBitmap(const Graphics::Surface *source, const Common::Rect &r);
+	void blitAlphaBitmap(Graphics::Surface *dst, const Graphics::Surface *source, const Common::Rect &r);
 
 	void applyScreenShading(GUI::ThemeEngine::ShadingStyle shadingStyle);
 
@@ -149,40 +150,40 @@ protected:
 	 * @see VectorRendererAA::drawLineAlg
 	 * @see VectorRendererAA::drawCircleAlg
 	 */
-	virtual void drawLineAlg(int x1, int y1, int x2, int y2,
+	virtual void drawLineAlg(Graphics::Surface *dst, int x1, int y1, int x2, int y2,
 	    int dx, int dy, PixelType color);
 
-	virtual void drawCircleAlg(int x, int y, int r,
+	virtual void drawCircleAlg(Graphics::Surface *dst, int x, int y, int r,
 	    PixelType color, FillMode fill_m);
 
-	virtual void drawRoundedSquareAlg(int x1, int y1, int r, int w, int h,
+	virtual void drawRoundedSquareAlg(Graphics::Surface *dst, int x1, int y1, int r, int w, int h,
 	    PixelType color, FillMode fill_m);
 
-	virtual void drawBorderRoundedSquareAlg(int x1, int y1, int r, int w, int h,
+	virtual void drawBorderRoundedSquareAlg(Graphics::Surface *dst, int x1, int y1, int r, int w, int h,
 	    PixelType color, FillMode fill_m, uint8 alpha_t, uint8 alpha_r, uint8 alpha_b, uint8 alpha_l);
 
-	virtual void drawInteriorRoundedSquareAlg(int x1, int y1, int r, int w, int h,
+	virtual void drawInteriorRoundedSquareAlg(Graphics::Surface *dst, int x1, int y1, int r, int w, int h,
 	    PixelType color, FillMode fill_m);
 
-	virtual void drawSquareAlg(int x, int y, int w, int h,
+	virtual void drawSquareAlg(Graphics::Surface *dst, int x, int y, int w, int h,
 	    PixelType color, FillMode fill_m);
 
-	virtual void drawTriangleVertAlg(int x, int y, int w, int h,
+	virtual void drawTriangleVertAlg(Graphics::Surface *dst, int x, int y, int w, int h,
 	    bool inverted, PixelType color, FillMode fill_m);
 
-	virtual void drawTriangleFast(int x, int y, int size,
+	virtual void drawTriangleFast(Graphics::Surface *dst, int x, int y, int size,
 	    bool inverted, PixelType color, FillMode fill_m);
 
-	virtual void drawBevelSquareAlg(int x, int y, int w, int h,
+	virtual void drawBevelSquareAlg(Graphics::Surface *dst, int x, int y, int w, int h,
 	    int bevel, PixelType top_color, PixelType bottom_color, bool fill);
 
-	virtual void drawTabAlg(int x, int y, int w, int h, int r,
+	virtual void drawTabAlg(Graphics::Surface *dst, int x, int y, int w, int h, int r,
 	    PixelType color, VectorRenderer::FillMode fill_m,
 	    int baseLeft = 0, int baseRight = 0);
 
-	virtual void drawTabShadow(int x, int y, int w, int h, int r);
+	virtual void drawTabShadow(Graphics::Surface *dst, int x, int y, int w, int h, int r);
 
-	virtual void drawBevelTabAlg(int x, int y, int w, int h,
+	virtual void drawBevelTabAlg(Graphics::Surface *dst, int x, int y, int w, int h,
 	    int bevel, PixelType topColor, PixelType bottomColor,
 	    int baseLeft = 0, int baseRight = 0);
 
@@ -196,8 +197,8 @@ protected:
 	 *
 	 * @param offset Intensity/size of the shadow.
 	 */
-	virtual void drawSquareShadow(int x, int y, int w, int h, int offset);
-	virtual void drawRoundedSquareShadow(int x, int y, int r, int w, int h, int offset);
+	virtual void drawSquareShadow(Graphics::Surface *dst, int x, int y, int w, int h, int offset);
+	virtual void drawRoundedSquareShadow(Graphics::Surface *dst, int x, int y, int r, int w, int h, int offset);
 
 	/**
 	 * Calculates the color gradient on a given point.
@@ -278,7 +279,7 @@ protected:
 	 *
 	 * @see VectorRenderer::drawLineAlg()
 	 */
-	virtual void drawLineAlg(int x1, int y1, int x2, int y2, int dx, int dy, PixelType color);
+	virtual void drawLineAlg(Graphics::Surface *dst, int x1, int y1, int x2, int y2, int dx, int dy, PixelType color);
 
 	/**
 	 * "Wu's Circle Antialiasing Algorithm" as published by Xiaolin Wu, July 1991
@@ -289,7 +290,7 @@ protected:
 	 *
 	 * @see VectorRenderer::drawCircleAlg()
 	 */
-	virtual void drawCircleAlg(int x, int y, int r, PixelType color, VectorRenderer::FillMode fill_m);
+	virtual void drawCircleAlg(Graphics::Surface *dst, int x, int y, int r, PixelType color, VectorRenderer::FillMode fill_m);
 
 	/**
 	 * "Wu's Circle Antialiasing Algorithm" as published by Xiaolin Wu, July 1991,
@@ -298,17 +299,17 @@ protected:
 	 *
 	 * @see VectorRenderer::drawRoundedAlg()
 	 */
-	virtual void drawRoundedSquareAlg(int x1, int y1, int r, int w, int h, PixelType color, VectorRenderer::FillMode fill_m);
+	virtual void drawRoundedSquareAlg(Graphics::Surface *dst, int x1, int y1, int r, int w, int h, PixelType color, VectorRenderer::FillMode fill_m);
 
-	virtual void drawBorderRoundedSquareAlg(int x1, int y1, int r, int w, int h, PixelType color, VectorRenderer::FillMode fill_m, uint8 alpha_t, uint8 alpha_l, uint8 alpha_r, uint8 alpha_b);
+	virtual void drawBorderRoundedSquareAlg(Graphics::Surface *dst, int x1, int y1, int r, int w, int h, PixelType color, VectorRenderer::FillMode fill_m, uint8 alpha_t, uint8 alpha_l, uint8 alpha_r, uint8 alpha_b);
 	
-	virtual void drawInteriorRoundedSquareAlg(int x1, int y1, int r, int w, int h, PixelType color, VectorRenderer::FillMode fill_m);
+	virtual void drawInteriorRoundedSquareAlg(Graphics::Surface *dst, int x1, int y1, int r, int w, int h, PixelType color, VectorRenderer::FillMode fill_m);
 
-	virtual void drawRoundedSquareShadow(int x, int y, int r, int w, int h, int offset) {
-		Base::drawRoundedSquareShadow(x, y, r, w, h, offset);
+	virtual void drawRoundedSquareShadow(Graphics::Surface *dst, int x, int y, int r, int w, int h, int offset) {
+		Base::drawRoundedSquareShadow(dst, x, y, r, w, h, offset);
 	}
 
-	virtual void drawTabAlg(int x, int y, int w, int h, int r,
+	virtual void drawTabAlg(Graphics::Surface *dst, int x, int y, int w, int h, int r,
 	    PixelType color, VectorRenderer::FillMode fill_m,
 	    int baseLeft = 0, int baseRight = 0);
 };
