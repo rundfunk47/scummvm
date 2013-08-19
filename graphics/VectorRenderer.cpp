@@ -55,7 +55,9 @@ void VectorRenderer::drawStep(const Common::Rect &area, const DrawStep &step, ui
 
 	_dynamicData = extra;
 
-	(this->*(step.drawingCall))(area, step);
+	Graphics::Surface dst = *_activeSurface;
+
+	(this->*(step.drawingCall))(&dst, area, step);
 }
 
 int VectorRenderer::stepGetRadius(const DrawStep &step, const Common::Rect &area) {
