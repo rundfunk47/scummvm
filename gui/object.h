@@ -61,6 +61,7 @@ class GuiObject : public CommandReceiver {
 	friend class Widget;
 protected:
 	Common::Rect _textDrawableArea;
+	Common::Rect _drawableArea;
 
 	int16		_x, _y;
 	uint16		_w, _h;
@@ -74,6 +75,10 @@ public:
 	~GuiObject();
 
 	virtual void setTextDrawableArea(const Common::Rect &r) { _textDrawableArea = r; }
+	virtual void setDrawableArea(const Common::Rect &r) { 
+		_textDrawableArea = r;
+		_drawableArea = r; 
+	}
 
 	virtual int16	getAbsX() const		{ return _x; }
 	virtual int16	getAbsY() const		{ return _y; }

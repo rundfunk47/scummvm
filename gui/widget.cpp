@@ -313,7 +313,7 @@ void ButtonWidget::handleFingerMoved(int x, int y, int deltax, int deltay, int b
 #endif
 
 void ButtonWidget::drawWidget() {
-	g_gui.theme()->drawButton(Common::Rect(_x, _y, _x+_w, _y+_h), _label, _state, getFlags());
+	g_gui.theme()->drawButton(Common::Rect(_x, _y, _x+_w, _y+_h), _label, _state, getFlags(), _drawableArea);
 }
 
 void ButtonWidget::setLabel(const Common::String &label) {
@@ -434,7 +434,7 @@ void PicButtonWidget::setGfx(int w, int h, int r, int g, int b) {
 }
 
 void PicButtonWidget::drawWidget() {
-	g_gui.theme()->drawButton(Common::Rect(_x, _y, _x+_w, _y+_h), "", _state, getFlags());
+	g_gui.theme()->drawButton(Common::Rect(_x, _y, _x+_w, _y+_h), "", _state, getFlags(), _drawableArea);
 
 	if (_gfx.getPixels()) {
 		// Check whether the set up surface needs to be converted to the GUI
