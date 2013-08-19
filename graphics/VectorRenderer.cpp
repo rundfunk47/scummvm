@@ -32,7 +32,7 @@ namespace Graphics {
 /********************************************************************
  * DRAWSTEP handling functions
  ********************************************************************/
-void VectorRenderer::drawStep(const Common::Rect &area, const DrawStep &step, uint32 extra) {
+void VectorRenderer::drawStep(const Common::Rect &area, const DrawStep &step, uint32 extra, const Common::Rect &drawableArea) {
 
 	if (step.bgColor.set)
 		setBgColor(step.bgColor.r, step.bgColor.g, step.bgColor.b);
@@ -55,9 +55,54 @@ void VectorRenderer::drawStep(const Common::Rect &area, const DrawStep &step, ui
 
 	_dynamicData = extra;
 
-	Graphics::Surface dst = *_activeSurface;
+	if (drawableArea.isEmpty()) {
+		(this->*(step.drawingCall))(_activeSurface, area, step);
+	} else {
 
-	(this->*(step.drawingCall))(&dst, area, step);
+		if (area.left > drawableArea.right || area.right < drawableArea.left)
+			return;
+		// FIXME: Same thing but for top/bottom 
+
+		Graphics::Surface backSurface;
+		// + 1 is used since we work under the assumption that a rect does not
+		// contain the bottom and right col/row of pixels. Also note that
+		// certain elements (e.g. rounded squares with shadows) need a larger
+		// area than the drawable area to be drawn
+		backSurface.create((area.width() + 1), (area.height() + 1), _activeSurface->format);
+		
+		byte *activeSurfacePtr = (byte *)_activeSurface->getBasePtr(area.left, area.top);
+		byte *backSurfacePtr = (byte *)backSurface.getBasePtr(0, 0);
+
+		// Copy background
+		for (int i = 0; i < backSurface.h; i++) {
+			memcpy(backSurfacePtr, activeSurfacePtr, backSurface.w * backSurface.format.bytesPerPixel);
+			activeSurfacePtr += _activeSurface->pitch;
+			backSurfacePtr += backSurface.pitch;
+		}
+
+		// Draw on backSurface
+		Common::Rect drawArea = Common::Rect(0, 0, area.width(), area.height());
+		(this->*(step.drawingCall))(&backSurface, drawArea, step);
+
+		int fromX   = ((area.left ) < drawableArea.left) ? drawableArea.left : area.left ;
+		int toX    = ((area.right ) > drawableArea.right) ? drawableArea.right + 1 : area.right + 1;
+
+		int bytesX   = toX - fromX;
+
+		int fromY  = (area.top < drawableArea.top) ? drawableArea.top : area.top;
+		int toY   = (drawableArea.bottom < area.bottom) ? drawableArea.bottom + 1 : area.bottom + 1;
+
+		activeSurfacePtr = (byte *)_activeSurface->getBasePtr(fromX, fromY);
+		backSurfacePtr = (byte *)backSurface.getBasePtr(fromX - area.left, fromY - area.top);
+
+		// Blit back on active surface
+		for (int i = fromY; i < toY; i++) {
+			memcpy(activeSurfacePtr, backSurfacePtr, bytesX * backSurface.format.bytesPerPixel);
+			activeSurfacePtr += _activeSurface->pitch;
+			backSurfacePtr += backSurface.pitch;
+		}
+		backSurface.free();
+	}
 }
 
 int VectorRenderer::stepGetRadius(const DrawStep &step, const Common::Rect &area) {

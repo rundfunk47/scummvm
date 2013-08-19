@@ -110,14 +110,15 @@ protected:
 
 class ThemeItemDrawData : public ThemeItem {
 public:
-	ThemeItemDrawData(ThemeEngine *engine, const WidgetDrawData *data, const Common::Rect &area, uint32 dynData) :
-		ThemeItem(engine, area), _dynamicData(dynData), _data(data) {}
+	ThemeItemDrawData(ThemeEngine *engine, const WidgetDrawData *data, const Common::Rect &area, uint32 dynData, const Common::Rect &drawableArea) :
+		ThemeItem(engine, area), _dynamicData(dynData), _data(data), _drawableArea(drawableArea) {}
 
 	void drawSelf(bool draw, bool restore);
 
 protected:
 	uint32 _dynamicData;
 	const WidgetDrawData *_data;
+	Common::Rect _drawableArea;
 };
 
 class ThemeItemTextData : public ThemeItem {
@@ -235,7 +236,7 @@ void ThemeItemDrawData::drawSelf(bool draw, bool restore) {
 	if (draw) {
 		Common::List<Graphics::DrawStep>::const_iterator step;
 		for (step = _data->_steps.begin(); step != _data->_steps.end(); ++step)
-			_engine->renderer()->drawStep(_area, *step, _dynamicData);
+			_engine->renderer()->drawStep(_area, *step, _dynamicData, _drawableArea);
 	}
 
 	_engine->addDirtyRect(extendedRect);
@@ -818,14 +819,14 @@ bool ThemeEngine::loadThemeXML(const Common::String &themeId) {
 /**********************************************************
  * Drawing Queue management
  *********************************************************/
-void ThemeEngine::queueDD(DrawData type, const Common::Rect &r, uint32 dynamic, bool restore) {
+void ThemeEngine::queueDD(DrawData type, const Common::Rect &r, uint32 dynamic, bool restore, const Common::Rect &drawableArea) {
 	if (_widgets[type] == 0)
 		return;
 
 	Common::Rect area = r;
 	area.clip(_screen.w, _screen.h);
 
-	ThemeItemDrawData *q = new ThemeItemDrawData(this, _widgets[type], area, dynamic);
+	ThemeItemDrawData *q = new ThemeItemDrawData(this, _widgets[type], area, dynamic, drawableArea);
 
 	if (_buffering) {
 		if (_widgets[type]->_buffer) {
@@ -881,7 +882,7 @@ void ThemeEngine::queueBitmap(const Graphics::Surface *bitmap, const Common::Rec
 /**********************************************************
  * Widget drawing functions
  *********************************************************/
-void ThemeEngine::drawButton(const Common::Rect &r, const Common::String &str, WidgetStateInfo state, uint16 hints) {
+void ThemeEngine::drawButton(const Common::Rect &r, const Common::String &str, WidgetStateInfo state, uint16 hints, const Common::Rect &drawableArea) {
 	if (!ready())
 		return;
 
@@ -896,7 +897,7 @@ void ThemeEngine::drawButton(const Common::Rect &r, const Common::String &str, W
 	else if (state == kStatePressed)
 		dd = kDDButtonPressed;
 
-	queueDD(dd, r, 0, hints & WIDGET_CLEARBG);
+	queueDD(dd, r, 0, hints & WIDGET_CLEARBG, drawableArea);
 	queueDDText(getTextData(dd), getTextColor(dd), r, str, false, true, _widgets[dd]->_textAlignH, _widgets[dd]->_textAlignV);
 }
 
@@ -1179,12 +1180,12 @@ void ThemeEngine::drawText(const Common::Rect &r, const Common::String &str, Wid
 
 	switch (inverted) {
 	case kTextInversion:
-		queueDD(kDDTextSelectionBackground, r);
+		queueDD(kDDTextSelectionBackground, r, 0, false, drawableTextArea);
 		restore = false;
 		break;
 
 	case kTextInversionFocus:
-		queueDD(kDDTextSelectionFocusBackground, r);
+		queueDD(kDDTextSelectionFocusBackground, r, 0, false, drawableTextArea);
 		restore = false;
 		break;
 

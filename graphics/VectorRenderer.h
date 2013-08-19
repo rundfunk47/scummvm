@@ -427,7 +427,7 @@ public:
 	 * @param area Zone to paint on
 	 * @param step Pointer to a DrawStep struct.
 	 */
-	virtual void drawStep(const Common::Rect &area, const DrawStep &step, uint32 extra = 0);
+	virtual void drawStep(const Common::Rect &area, const DrawStep &step, uint32 extra = 0, const Common::Rect &drawableArea = Common::Rect(0, 0, 0, 0));
 
 	/**
 	 * Copies the part of the current frame to the system overlay.
