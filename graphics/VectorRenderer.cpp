@@ -58,10 +58,10 @@ void VectorRenderer::drawStep(const Common::Rect &area, const DrawStep &step, ui
 	if (drawableArea.isEmpty()) {
 		(this->*(step.drawingCall))(_activeSurface, area, step);
 	} else {
-
 		if (area.left > drawableArea.right || area.right < drawableArea.left)
 			return;
-		// FIXME: Same thing but for top/bottom 
+		if (area.top > drawableArea.bottom || area.bottom < drawableArea.top)
+			return;
 
 		Graphics::Surface backSurface;
 		// + 1 is used since we work under the assumption that a rect does not

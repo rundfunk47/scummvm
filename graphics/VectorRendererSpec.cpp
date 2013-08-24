@@ -562,8 +562,9 @@ blitAlphaBitmap(const Graphics::Surface *source, const Common::Rect &r, const Co
 		drawArea.bottom = _activeSurface->h;
 		drawArea.right = _activeSurface->w;
 	} else {
-		// FIXME: Same thing but for top/bottom 
 		if (r.left > drawableArea.right || r.right < drawableArea.left)
+			return;
+		if (r.top > drawableArea.bottom || r.bottom < drawableArea.top)
 			return;
 		
 		drawArea = drawableArea;
