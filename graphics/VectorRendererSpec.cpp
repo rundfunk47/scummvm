@@ -553,32 +553,45 @@ blitSubSurface(const Graphics::Surface *source, const Common::Rect &r) {
 
 template<typename PixelType>
 void VectorRendererSpec<PixelType>::
-blitAlphaBitmap(const Graphics::Surface *source, const Common::Rect &r) {
-	blitAlphaBitmap(_activeSurface, source, r);
-}
+blitAlphaBitmap(const Graphics::Surface *source, const Common::Rect &r, const Common::Rect &drawableArea) {
+	Common::Rect drawArea;
 
-template<typename PixelType>
-void VectorRendererSpec<PixelType>::
-blitAlphaBitmap(Graphics::Surface *dst, const Graphics::Surface *source, const Common::Rect &r) {
+	if (drawableArea.isEmpty()) {
+		drawArea.left = 0;
+		drawArea.top = 0;
+		drawArea.bottom = _activeSurface->h;
+		drawArea.right = _activeSurface->w;
+	} else {
+		// FIXME: Same thing but for top/bottom 
+		if (r.left > drawableArea.right || r.right < drawableArea.left)
+			return;
+		
+		drawArea = drawableArea;
+	}
+
+	int fromX = ((r.left ) < drawArea.left) ? drawArea.left : r.left;
+	int toX = ((r.right ) > drawArea.right) ? drawArea.right : r.right;
+
+	int bytesX = toX - fromX;
+
+	int fromY = (r.top < drawArea.top) ? drawArea.top : r.top;
+	int toY = (drawArea.bottom < r.bottom) ? drawArea.bottom: r.bottom;
+
 	int16 x = r.left;
 	int16 y = r.top;
 
-	if (r.width() > source->w)
-		x = x + (r.width() >> 1) - (source->w >> 1);
+	PixelType *dst_ptr = (PixelType *)_activeSurface->getBasePtr(fromX, fromY);
+	const PixelType *src_ptr = (const PixelType *)source->getBasePtr(fromX - r.left, fromY - r.top);
 
-	if (r.height() > source->h)
-		y = y + (r.height() >> 1) - (source->h >> 1);
-
-	PixelType *dst_ptr = (PixelType *)dst->getBasePtr(x, y);
-	const PixelType *src_ptr = (const PixelType *)source->getPixels();
-
-	int dst_pitch = dst->pitch / dst->format.bytesPerPixel;
+	int dst_pitch = _activeSurface->pitch / _activeSurface->format.bytesPerPixel;
 	int src_pitch = source->pitch / source->format.bytesPerPixel;
 
-	int w, h = source->h;
+	int w;
+	int h = toY - fromY;
 
 	while (h--) {
-		w = source->w;
+		//w = source->w;
+		w = toX - fromX;
 
 		while (w--) {
 			if (*src_ptr != _bitmapAlphaColor)
@@ -588,8 +601,8 @@ blitAlphaBitmap(Graphics::Surface *dst, const Graphics::Surface *source, const C
 			src_ptr++;
 		}
 
-		dst_ptr = dst_ptr - source->w + dst_pitch;
-		src_ptr = src_ptr - source->w + src_pitch;
+		dst_ptr = dst_ptr - bytesX + dst_pitch;
+		src_ptr = src_ptr - bytesX + src_pitch;
 	}
 }
 

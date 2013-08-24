@@ -345,7 +345,7 @@ public:
 	                WidgetStateInfo state = kStateEnabled, uint16 hints = 0, const Common::Rect &drawableArea = Common::Rect(0, 0, 0, 0));
 
 	void drawSurface(const Common::Rect &r, const Graphics::Surface &surface,
-	                 WidgetStateInfo state = kStateEnabled, int alpha = 256, bool themeTrans = false);
+	                WidgetStateInfo state = kStateEnabled, int alpha = 256, bool themeTrans = false, const Common::Rect &drawableArea = Common::Rect(0, 0, 0, 0));
 
 	void drawSlider(const Common::Rect &r, int width,
 	                WidgetStateInfo state = kStateEnabled);
@@ -586,7 +586,7 @@ protected:
 	void queueDD(DrawData type,  const Common::Rect &r, uint32 dynamic = 0, bool restore = false, const Common::Rect &drawableArea = Common::Rect(0, 0, 0, 0));
 	void queueDDText(TextData type, TextColor color, const Common::Rect &r, const Common::String &text, bool restoreBg,
 	                 bool elipsis, Graphics::TextAlign alignH = Graphics::kTextAlignLeft, TextAlignVertical alignV = kTextAlignVTop, int deltax = 0, const Common::Rect &drawableTextArea = Common::Rect(0, 0, 0, 0));
-	void queueBitmap(const Graphics::Surface *bitmap, const Common::Rect &r, bool alpha);
+	void queueBitmap(const Graphics::Surface *bitmap, const Common::Rect &r, bool alpha, const Common::Rect &drawableArea = Common::Rect(0, 0, 0, 0));
 
 	/**
 	 * DEBUG: Draws a white square and writes some text next to it.
