@@ -292,7 +292,7 @@ void BaseRenderOSystem::drawSurface(BaseSurfaceOSystem *owner, const Graphics::S
 				if (_disableDirtyRects) {
 					drawFromSurface(compareTicket);
 				} else {
-					drawFromTicket(compareTicket);
+					drawFromQueuedTicket(it);
 					_previousTicket = compareTicket;
 				}
 				return;
@@ -371,7 +371,8 @@ void BaseRenderOSystem::invalidateTicketsFromSurface(BaseSurfaceOSystem *surf) {
 void BaseRenderOSystem::drawFromTicket(RenderTicket *renderTicket) {
 	renderTicket->_wantsDraw = true;
 	// A new item always has _drawNum == 0
-	if (renderTicket->_drawNum == 0) {
+	assert(renderTicket->_drawNum == 0);
+	{
 		++_lastFrameIter;
 		// In-order
 		if (_renderQueue.empty() || _drawNum > (_renderQueue.back())->_drawNum) {
@@ -407,7 +408,14 @@ void BaseRenderOSystem::drawFromTicket(RenderTicket *renderTicket) {
 			addDirtyRect(renderTicket->_dstRect);
 			_lastAddedTicket = pos;
 		}
-	} else {
+	}
+}
+
+void BaseRenderOSystem::drawFromQueuedTicket(const RenderQueueIterator &ticket) {
+	RenderTicket *renderTicket = *ticket;
+	renderTicket->_wantsDraw = true;
+	assert(renderTicket->_drawNum != 0);
+	{
 		++_lastFrameIter;
 		// Was drawn last round, still in the same order
 		if (_drawNum == renderTicket->_drawNum) {
@@ -420,15 +428,7 @@ void BaseRenderOSystem::drawFromTicket(RenderTicket *renderTicket) {
 			--_lastFrameIter;
 			assert(_drawNum < renderTicket->_drawNum);
 			// Remove the ticket from the list
-			RenderQueueIterator it = _renderQueue.begin();
-			while (it != _renderQueue.end()) {
-				if ((*it) == renderTicket) {
-					it = _renderQueue.erase(it);
-					break;
-				} else {
-					++it;
-				}
-			}
+			RenderQueueIterator it = _renderQueue.erase(ticket);
 			if (it != _renderQueue.end()) {
 				// Decreement the following tickets.
 				for (; it != _renderQueue.end(); ++it) {
