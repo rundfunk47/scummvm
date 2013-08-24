@@ -145,14 +145,15 @@ protected:
 
 class ThemeItemBitmap : public ThemeItem {
 public:
-	ThemeItemBitmap(ThemeEngine *engine, const Common::Rect &area, const Graphics::Surface *bitmap, bool alpha) :
-		ThemeItem(engine, area), _bitmap(bitmap), _alpha(alpha) {}
+	ThemeItemBitmap(ThemeEngine *engine, const Common::Rect &area, const Graphics::Surface *bitmap, bool alpha, const Common::Rect &drawableArea) :
+		ThemeItem(engine, area), _bitmap(bitmap), _alpha(alpha), _drawableArea(drawableArea) {}
 
 	void drawSelf(bool draw, bool restore);
 
 protected:
 	const Graphics::Surface *_bitmap;
 	bool _alpha;
+	Common::Rect _drawableArea;
 };
 
 
@@ -260,7 +261,7 @@ void ThemeItemBitmap::drawSelf(bool draw, bool restore) {
 
 	if (draw) {
 		if (_alpha)
-			_engine->renderer()->blitAlphaBitmap(_bitmap, _area);
+			_engine->renderer()->blitAlphaBitmap(_bitmap, _area, _drawableArea);
 		else
 			_engine->renderer()->blitSubSurface(_bitmap, _area);
 	}
@@ -862,12 +863,12 @@ void ThemeEngine::queueDDText(TextData type, TextColor color, const Common::Rect
 	}
 }
 
-void ThemeEngine::queueBitmap(const Graphics::Surface *bitmap, const Common::Rect &r, bool alpha) {
+void ThemeEngine::queueBitmap(const Graphics::Surface *bitmap, const Common::Rect &r, bool alpha, const Common::Rect &drawableArea) {
 
 	Common::Rect area = r;
 	area.clip(_screen.w, _screen.h);
 
-	ThemeItemBitmap *q = new ThemeItemBitmap(this, area, bitmap, alpha);
+	ThemeItemBitmap *q = new ThemeItemBitmap(this, area, bitmap, alpha, drawableArea);
 
 	if (_buffering) {
 		_screenQueue.push_back(q);
@@ -1065,11 +1066,11 @@ void ThemeEngine::drawPopUpWidget(const Common::Rect &r, const Common::String &s
 	}
 }
 
-void ThemeEngine::drawSurface(const Common::Rect &r, const Graphics::Surface &surface, WidgetStateInfo state, int alpha, bool themeTrans) {
+void ThemeEngine::drawSurface(const Common::Rect &r, const Graphics::Surface &surface, WidgetStateInfo state, int alpha, bool themeTrans, const Common::Rect &drawableArea) {
 	if (!ready())
 		return;
 
-	queueBitmap(&surface, r, themeTrans);
+	queueBitmap(&surface, r, themeTrans, drawableArea);
 }
 
 void ThemeEngine::drawWidgetBackground(const Common::Rect &r, uint16 hints, WidgetBackground background, WidgetStateInfo state) {

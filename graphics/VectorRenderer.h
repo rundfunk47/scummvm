@@ -409,7 +409,10 @@ public:
 	void drawCallback_BITMAP(Graphics::Surface *dst, const Common::Rect &area, const DrawStep &step) {
 		uint16 x, y, w, h;
 		stepGetPositions(step, area, x, y, w, h);
-		blitAlphaBitmap(dst, step.blitSrc, Common::Rect(x, y, x + w, y + h));
+
+		Common::Rect drawableArea = Common::Rect(0, 0, 0, 0);
+
+		blitAlphaBitmap(step.blitSrc, Common::Rect(x, y, x + w, y + h), drawableArea);
 	}
 
 	void drawCallback_CROSS(Graphics::Surface *dst, const Common::Rect &area, const DrawStep &step) {
@@ -469,10 +472,8 @@ public:
 	 */
 	virtual void blitSubSurface(const Graphics::Surface *source, const Common::Rect &r) = 0;
 
-	virtual void blitAlphaBitmap(const Graphics::Surface *source, const Common::Rect &r) = 0;
+	virtual void blitAlphaBitmap(const Graphics::Surface *source, const Common::Rect &r, const Common::Rect &drawableArea) = 0;
 	
-	virtual void blitAlphaBitmap(Graphics::Surface *dst, const Graphics::Surface *source, const Common::Rect &r) = 0;
-
 	/**
 	 * Draws a string into the screen. Wrapper for the Graphics::Font string drawing
 	 * method.

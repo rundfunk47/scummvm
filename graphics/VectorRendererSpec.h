@@ -74,8 +74,7 @@ public:
 	void fillSurface(Graphics::Surface *dst);
 	void blitSurface(const Graphics::Surface *source, const Common::Rect &r);
 	void blitSubSurface(const Graphics::Surface *source, const Common::Rect &r);
-	void blitAlphaBitmap(const Graphics::Surface *source, const Common::Rect &r);
-	void blitAlphaBitmap(Graphics::Surface *dst, const Graphics::Surface *source, const Common::Rect &r);
+	void blitAlphaBitmap(const Graphics::Surface *source, const Common::Rect &r, const Common::Rect &drawableArea);
 
 	void applyScreenShading(GUI::ThemeEngine::ShadingStyle shadingStyle);
 

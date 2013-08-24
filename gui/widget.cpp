@@ -447,7 +447,7 @@ void PicButtonWidget::drawWidget() {
 		const int x = _x + (_w - _gfx.w) / 2;
 		const int y = _y + (_h - _gfx.h) / 2;
 
-		g_gui.theme()->drawSurface(Common::Rect(x, y, x + _gfx.w,  y + _gfx.h), _gfx, _state, _alpha, _transparency);
+		g_gui.theme()->drawSurface(Common::Rect(x, y, x + _gfx.w,  y + _gfx.h), _gfx, _state, _alpha, _transparency, _drawableArea);
 	}
 }
 
