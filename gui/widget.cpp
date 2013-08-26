@@ -383,7 +383,7 @@ void ButtonWidget::wantTickle(bool tickled) {
 
 PicButtonWidget::PicButtonWidget(GuiObject *boss, int x, int y, int w, int h, const char *tooltip, uint32 cmd, uint8 hotkey)
 	: ButtonWidget(boss, x, y, w, h, "", tooltip, cmd, hotkey),
-	  _gfx(), _alpha(256), _transparency(false) {
+	  _gfx(), _alpha(256), _transparency(false), _showButton(true) {
 
 	setFlags(WIDGET_ENABLED/* | WIDGET_BORDER*/ | WIDGET_CLEARBG);
 	_type = kButtonWidget;
@@ -391,7 +391,7 @@ PicButtonWidget::PicButtonWidget(GuiObject *boss, int x, int y, int w, int h, co
 
 PicButtonWidget::PicButtonWidget(GuiObject *boss, const Common::String &name, const char *tooltip, uint32 cmd, uint8 hotkey)
 	: ButtonWidget(boss, name, "", tooltip, cmd, hotkey),
-	  _gfx(), _alpha(256), _transparency(false) {
+	  _gfx(), _alpha(256), _transparency(false), _showButton(true) {
 	setFlags(WIDGET_ENABLED/* | WIDGET_BORDER*/ | WIDGET_CLEARBG);
 	_type = kButtonWidget;
 }
@@ -434,7 +434,8 @@ void PicButtonWidget::setGfx(int w, int h, int r, int g, int b) {
 }
 
 void PicButtonWidget::drawWidget() {
-	g_gui.theme()->drawButton(Common::Rect(_x, _y, _x+_w, _y+_h), "", _state, getFlags(), _drawableArea);
+	if (_showButton)
+		g_gui.theme()->drawButton(Common::Rect(_x, _y, _x+_w, _y+_h), "", _state, getFlags(), _drawableArea);
 
 	if (_gfx.getPixels()) {
 		// Check whether the set up surface needs to be converted to the GUI
