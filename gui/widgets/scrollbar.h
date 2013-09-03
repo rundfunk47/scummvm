@@ -44,7 +44,7 @@ protected:
 	} Part;
 
 	Part	_part;
-	int		_sliderHeight;
+	int		_sliderLength;
 	int		_sliderPos;
 
 	Part	_draggingPart;
@@ -56,6 +56,7 @@ protected:
 	};
 	uint32	_repeatTimer;
 
+	bool	_horizontal;
 public:
 	int		_numEntries;
 	int		_entriesPerPage;
@@ -63,7 +64,7 @@ public:
 	int		_scrollOffset;
 
 public:
-	ScrollBarWidget(GuiObject *boss, int x, int y, int w, int h);
+	ScrollBarWidget(GuiObject *boss, int x, int y, int w, int h, bool horizontal);
 
 	void handleScroll(int pixels, int stepSize);
 	void handleMouseDown(int x, int y, int button, int clickCount);

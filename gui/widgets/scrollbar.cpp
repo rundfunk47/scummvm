@@ -28,15 +28,16 @@
 
 namespace GUI {
 
-#define UP_DOWN_BOX_HEIGHT	(_w+1)
+#define UP_DOWN_BOX_HEIGHT	 (_w+1)
+#define LEFT_RIGHT_BOX_WIDTH (_h+1)
 
-ScrollBarWidget::ScrollBarWidget(GuiObject *boss, int x, int y, int w, int h)
+ScrollBarWidget::ScrollBarWidget(GuiObject *boss, int x, int y, int w, int h, bool horizontal)
 	: Widget (boss, x, y, w, h), CommandSender(boss) {
 	setFlags(WIDGET_ENABLED | WIDGET_TRACK_MOUSE | WIDGET_CLEARBG | WIDGET_WANT_TICKLE);
 	_type = kScrollBarWidget;
 
 	_part = kNoPart;
-	_sliderHeight = 0;
+	_sliderLength = 0;
 	_sliderPos = 0;
 
 	_draggingPart = kNoPart;
@@ -48,6 +49,8 @@ ScrollBarWidget::ScrollBarWidget(GuiObject *boss, int x, int y, int w, int h)
 	_scrollOffset = 0;
 
 	_repeatTimer = 0;
+
+	_horizontal = horizontal;
 }
 
 void ScrollBarWidget::handleScroll(int pixels, int stepSize) {
@@ -82,23 +85,44 @@ void ScrollBarWidget::handleMouseDown(int x, int y, int button, int clickCount) 
 	if (_numEntries <= _entriesPerPage)
 		return;
 
-	if (y <= UP_DOWN_BOX_HEIGHT) {
-		// Up arrow
-		_currentPos--;
-		_repeatTimer = g_system->getMillis() + kRepeatInitialDelay;
-		_draggingPart = kUpArrowPart;
-	} else if (y >= _h - UP_DOWN_BOX_HEIGHT) {
-		// Down arrow
-		_currentPos++;
-		_repeatTimer = g_system->getMillis() + kRepeatInitialDelay;
-		_draggingPart = kDownArrowPart;
-	} else if (y < _sliderPos) {
-		_currentPos -= _entriesPerPage - 1;
-	} else if (y >= _sliderPos + _sliderHeight) {
-		_currentPos += _entriesPerPage - 1;
+	if (_horizontal) {
+		if (x <= LEFT_RIGHT_BOX_WIDTH) {
+			// Left arrow
+			_currentPos--;
+			_repeatTimer = g_system->getMillis() + kRepeatInitialDelay;
+			_draggingPart = kUpArrowPart;
+		} else if (x >= _w - LEFT_RIGHT_BOX_WIDTH) {
+			// Right arrow
+			_currentPos++;
+			_repeatTimer = g_system->getMillis() + kRepeatInitialDelay;
+			_draggingPart = kDownArrowPart;
+		} else if (x < _sliderPos) {
+			_currentPos -= _entriesPerPage - 1;
+		} else if (x >= _sliderPos + _sliderLength) {
+			_currentPos += _entriesPerPage - 1;
+		} else {
+			_draggingPart = kSliderPart;
+			_sliderDeltaMouseDownPos = x - _sliderPos;
+		}
 	} else {
-		_draggingPart = kSliderPart;
-		_sliderDeltaMouseDownPos = y - _sliderPos;
+		if (y <= UP_DOWN_BOX_HEIGHT) {
+			// Up arrow
+			_currentPos--;
+			_repeatTimer = g_system->getMillis() + kRepeatInitialDelay;
+			_draggingPart = kUpArrowPart;
+		} else if (y >= _h - UP_DOWN_BOX_HEIGHT) {
+			// Down arrow
+			_currentPos++;
+			_repeatTimer = g_system->getMillis() + kRepeatInitialDelay;
+			_draggingPart = kDownArrowPart;
+		} else if (y < _sliderPos) {
+			_currentPos -= _entriesPerPage - 1;
+		} else if (y >= _sliderPos + _sliderLength) {
+			_currentPos += _entriesPerPage - 1;
+		} else {
+			_draggingPart = kSliderPart;
+			_sliderDeltaMouseDownPos = y - _sliderPos;
+		}
 	}
 
 	// Make sure that _currentPos is still inside the bounds
@@ -114,36 +138,69 @@ void ScrollBarWidget::handleMouseMoved(int x, int y, int button) {
 	// Do nothing if there are less items than fit on one page
 	if (_numEntries <= _entriesPerPage)
 		return;
+	
+	if (_horizontal) {
+		if (_draggingPart == kSliderPart) {
+			int old_pos = _currentPos;
+			_sliderPos = x - _sliderDeltaMouseDownPos;
 
-	if (_draggingPart == kSliderPart) {
-		int old_pos = _currentPos;
-		_sliderPos = y - _sliderDeltaMouseDownPos;
+			if (_sliderPos < LEFT_RIGHT_BOX_WIDTH)
+				_sliderPos = LEFT_RIGHT_BOX_WIDTH;
 
-		if (_sliderPos < UP_DOWN_BOX_HEIGHT)
-			_sliderPos = UP_DOWN_BOX_HEIGHT;
+			if (_sliderPos > _w - LEFT_RIGHT_BOX_WIDTH - _sliderLength)
+				_sliderPos = _w - LEFT_RIGHT_BOX_WIDTH - _sliderLength;
 
-		if (_sliderPos > _h - UP_DOWN_BOX_HEIGHT - _sliderHeight)
-			_sliderPos = _h - UP_DOWN_BOX_HEIGHT - _sliderHeight;
+			_currentPos =
+				(_sliderPos - LEFT_RIGHT_BOX_WIDTH) * (_numEntries - _entriesPerPage) / (_w - 2 * LEFT_RIGHT_BOX_WIDTH - _sliderLength);
+			checkBounds(old_pos);
+		} else {
+			int old_part = _part;
 
-		_currentPos =
-			(_sliderPos - UP_DOWN_BOX_HEIGHT) * (_numEntries - _entriesPerPage) / (_h - 2 * UP_DOWN_BOX_HEIGHT - _sliderHeight);
-		checkBounds(old_pos);
+			if (x <= LEFT_RIGHT_BOX_WIDTH)	// Left arrow
+				_part = kUpArrowPart;
+			else if (x >= _w - LEFT_RIGHT_BOX_WIDTH)	// Right arrow
+				_part = kDownArrowPart;
+			else if (x < _sliderPos)
+				_part = kPageUpPart;
+			else if (x >= _sliderPos + _sliderLength)
+				_part = kPageDownPart;
+			else
+				_part = kSliderPart;
+
+			if (old_part != _part)
+				draw();
+		}
 	} else {
-		int old_part = _part;
+		if (_draggingPart == kSliderPart) {
+			int old_pos = _currentPos;
+			_sliderPos = y - _sliderDeltaMouseDownPos;
 
-		if (y <= UP_DOWN_BOX_HEIGHT)	// Up arrow
-			_part = kUpArrowPart;
-		else if (y >= _h - UP_DOWN_BOX_HEIGHT)	// Down arrow
-			_part = kDownArrowPart;
-		else if (y < _sliderPos)
-			_part = kPageUpPart;
-		else if (y >= _sliderPos + _sliderHeight)
-			_part = kPageDownPart;
-		else
-			_part = kSliderPart;
+			if (_sliderPos < UP_DOWN_BOX_HEIGHT)
+				_sliderPos = UP_DOWN_BOX_HEIGHT;
 
-		if (old_part != _part)
-			draw();
+			if (_sliderPos > _h - UP_DOWN_BOX_HEIGHT - _sliderLength)
+				_sliderPos = _h - UP_DOWN_BOX_HEIGHT - _sliderLength;
+
+			_currentPos =
+				(_sliderPos - UP_DOWN_BOX_HEIGHT) * (_numEntries - _entriesPerPage) / (_h - 2 * UP_DOWN_BOX_HEIGHT - _sliderLength);
+			checkBounds(old_pos);
+		} else {
+			int old_part = _part;
+
+			if (y <= UP_DOWN_BOX_HEIGHT)	// Up arrow
+				_part = kUpArrowPart;
+			else if (y >= _h - UP_DOWN_BOX_HEIGHT)	// Down arrow
+				_part = kDownArrowPart;
+			else if (y < _sliderPos)
+				_part = kPageUpPart;
+			else if (y >= _sliderPos + _sliderLength)
+				_part = kPageDownPart;
+			else
+				_part = kSliderPart;
+
+			if (old_part != _part)
+				draw();
+		}
 	}
 }
 
@@ -179,20 +236,38 @@ void ScrollBarWidget::checkBounds(int old_pos) {
 }
 
 void ScrollBarWidget::recalc() {
-	if (_numEntries > _entriesPerPage) {
-		_sliderHeight = (_h - 2 * UP_DOWN_BOX_HEIGHT) * _entriesPerPage / _numEntries;
-		if (_sliderHeight < UP_DOWN_BOX_HEIGHT)
-			_sliderHeight = UP_DOWN_BOX_HEIGHT;
+	if (_horizontal) {
+		if (_numEntries > _entriesPerPage) {
+			_sliderLength = (_w - 2 * LEFT_RIGHT_BOX_WIDTH) * _entriesPerPage / _numEntries;
+			if (_sliderLength < LEFT_RIGHT_BOX_WIDTH)
+				_sliderLength = LEFT_RIGHT_BOX_WIDTH;
 
-		_sliderPos =
-			UP_DOWN_BOX_HEIGHT + (_h - 2 * UP_DOWN_BOX_HEIGHT - _sliderHeight) * _currentPos / (_numEntries - _entriesPerPage);
-		if (_sliderPos < 0)
-			_sliderPos = 0;
-		setVisible(true);
+			_sliderPos =
+				LEFT_RIGHT_BOX_WIDTH + (_w - 2 * LEFT_RIGHT_BOX_WIDTH - _sliderLength) * _currentPos / (_numEntries - _entriesPerPage);
+			if (_sliderPos < 0)
+				_sliderPos = 0;
+			setVisible(true);
+		} else {
+			_sliderLength = _w - 2 * LEFT_RIGHT_BOX_WIDTH;
+			_sliderPos = LEFT_RIGHT_BOX_WIDTH;
+			setVisible(false);
+		}
 	} else {
-		_sliderHeight = _h - 2 * UP_DOWN_BOX_HEIGHT;
-		_sliderPos = UP_DOWN_BOX_HEIGHT;
-		setVisible(false);
+		if (_numEntries > _entriesPerPage) {
+			_sliderLength = (_h - 2 * UP_DOWN_BOX_HEIGHT) * _entriesPerPage / _numEntries;
+			if (_sliderLength < UP_DOWN_BOX_HEIGHT)
+				_sliderLength = UP_DOWN_BOX_HEIGHT;
+
+			_sliderPos =
+				UP_DOWN_BOX_HEIGHT + (_h - 2 * UP_DOWN_BOX_HEIGHT - _sliderLength) * _currentPos / (_numEntries - _entriesPerPage);
+			if (_sliderPos < 0)
+				_sliderPos = 0;
+			setVisible(true);
+		} else {
+			_sliderLength = _h - 2 * UP_DOWN_BOX_HEIGHT;
+			_sliderPos = UP_DOWN_BOX_HEIGHT;
+			setVisible(false);
+		}
 	}
 }
 
@@ -211,7 +286,7 @@ void ScrollBarWidget::drawWidget() {
 		state = ThemeEngine::kScrollbarStateSlider;
 	}
 
-	g_gui.theme()->drawScrollbar(Common::Rect(_x, _y, _x+_w, _y+_h), _sliderPos, _sliderHeight, state, _state);
+	g_gui.theme()->drawScrollbar(Common::Rect(_x, _y, _x+_w, _y+_h), _sliderPos, _sliderLength, state, _state, _horizontal);
 }
 
 } // End of namespace GUI

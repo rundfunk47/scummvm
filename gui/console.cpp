@@ -57,7 +57,7 @@ ConsoleDialog::ConsoleDialog(float widthPercent, float heightPercent)
 	memset(_buffer, ' ', kBufferSize);
 
 	// Dummy
-	_scrollBar = new ScrollBarWidget(this, 0, 0, 5, 10);
+	_scrollBar = new ScrollBarWidget(this, 0, 0, 5, 10, false);
 	_scrollBar->setTarget(this);
 
 	init();

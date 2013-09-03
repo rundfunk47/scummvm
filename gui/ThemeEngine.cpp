@@ -984,30 +984,53 @@ void ThemeEngine::drawSlider(const Common::Rect &r, int width, WidgetStateInfo s
 	queueDD(dd, r2);
 }
 
-void ThemeEngine::drawScrollbar(const Common::Rect &r, int sliderY, int sliderHeight, ScrollbarState scrollState, WidgetStateInfo state) {
+void ThemeEngine::drawScrollbar(const Common::Rect &r, int sliderY, int sliderHeight, ScrollbarState scrollState, WidgetStateInfo state, bool horizontal) {
 	if (!ready())
 		return;
 
-	queueDD(kDDScrollbarBase, r);
+	if (horizontal) {
+		queueDD(kDDScrollbarBase, r);
+		
+		Common::Rect r2 = r;
+		const int buttonExtra = (r.height() * 120) / 100;
+		
+		r2.right = r2.left + buttonExtra;
+		queueDD(scrollState == kScrollbarStateUp ? kDDScrollbarButtonHover : kDDScrollbarButtonIdle, r2, Graphics::VectorRenderer::kTriangleLeft);
+		
+		r2.translate(r.width() - r2.width(), 0);
+		queueDD(scrollState == kScrollbarStateDown ? kDDScrollbarButtonHover : kDDScrollbarButtonIdle, r2, Graphics::VectorRenderer::kTriangleRight);
 
-	Common::Rect r2 = r;
-	const int buttonExtra = (r.width() * 120) / 100;
+		r2 = r;
+		r2.top += 1;
+		r2.bottom -= 1;
+		r2.left += sliderY;
+		r2.right = r2.left + sliderHeight;
 
-	r2.bottom = r2.top + buttonExtra;
-	queueDD(scrollState == kScrollbarStateUp ? kDDScrollbarButtonHover : kDDScrollbarButtonIdle, r2, Graphics::VectorRenderer::kTriangleUp);
+		r2.left += r.height() / 5;
+		r2.right -= r.height() / 5;
+		queueDD(scrollState == kScrollbarStateSlider ? kDDScrollbarHandleHover : kDDScrollbarHandleIdle, r2);
+	} else {
+		queueDD(kDDScrollbarBase, r);
 
-	r2.translate(0, r.height() - r2.height());
-	queueDD(scrollState == kScrollbarStateDown ? kDDScrollbarButtonHover : kDDScrollbarButtonIdle, r2, Graphics::VectorRenderer::kTriangleDown);
+		Common::Rect r2 = r;
+		const int buttonExtra = (r.width() * 120) / 100;
 
-	r2 = r;
-	r2.left += 1;
-	r2.right -= 1;
-	r2.top += sliderY;
-	r2.bottom = r2.top + sliderHeight;
+		r2.bottom = r2.top + buttonExtra;
+		queueDD(scrollState == kScrollbarStateUp ? kDDScrollbarButtonHover : kDDScrollbarButtonIdle, r2, Graphics::VectorRenderer::kTriangleUp);
 
-	r2.top += r.width() / 5;
-	r2.bottom -= r.width() / 5;
-	queueDD(scrollState == kScrollbarStateSlider ? kDDScrollbarHandleHover : kDDScrollbarHandleIdle, r2);
+		r2.translate(0, r.height() - r2.height());
+		queueDD(scrollState == kScrollbarStateDown ? kDDScrollbarButtonHover : kDDScrollbarButtonIdle, r2, Graphics::VectorRenderer::kTriangleDown);
+
+		r2 = r;
+		r2.left += 1;
+		r2.right -= 1;
+		r2.top += sliderY;
+		r2.bottom = r2.top + sliderHeight;
+
+		r2.top += r.width() / 5;
+		r2.bottom -= r.width() / 5;
+		queueDD(scrollState == kScrollbarStateSlider ? kDDScrollbarHandleHover : kDDScrollbarHandleIdle, r2);
+	}
 }
 
 void ThemeEngine::drawDialogBackground(const Common::Rect &r, DialogBackground bgtype, WidgetStateInfo state) {
