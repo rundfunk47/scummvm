@@ -361,7 +361,7 @@ public:
 	             int titleVPad, WidgetStateInfo state = kStateEnabled);
 
 	void drawScrollbar(const Common::Rect &r, int sliderY, int sliderHeight,
-	                   ScrollbarState, WidgetStateInfo state = kStateEnabled);
+	                   ScrollbarState, WidgetStateInfo state = kStateEnabled, bool horizontal = false);
 
 	void drawPopUpWidget(const Common::Rect &r, const Common::String &sel,
 	                     int deltax, WidgetStateInfo state = kStateEnabled, Graphics::TextAlign align = Graphics::kTextAlignLeft);

@@ -168,7 +168,7 @@ protected:
 	    PixelType color, FillMode fill_m);
 
 	virtual void drawTriangleVertAlg(Graphics::Surface *dst, int x, int y, int w, int h,
-	    bool inverted, PixelType color, FillMode fill_m);
+	    VectorRenderer::TriangleOrientation orientation, PixelType color, FillMode fill_m);
 
 	virtual void drawTriangleFast(Graphics::Surface *dst, int x, int y, int size,
 	    bool inverted, PixelType color, FillMode fill_m);
