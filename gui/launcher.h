@@ -30,6 +30,7 @@ namespace GUI {
 class BrowserDialog;
 class CommandSender;
 class ListWidget;
+class GridWidget;
 class ButtonWidget;
 class PicButtonWidget;
 class GraphicsWidget;
@@ -53,7 +54,14 @@ public:
 
 protected:
 	EditTextWidget  *_searchWidget;
+
+#define LAUNCHER_GRID
+
+#ifndef LAUNCHER_GRID 
 	ListWidget		*_list;
+#else
+	GridWidget		*_grid;
+#endif
 	ButtonWidget	*_addButton;
 	Widget			*_startButton;
 	ButtonWidget	*_loadButton;
