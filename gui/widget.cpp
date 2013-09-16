@@ -724,6 +724,46 @@ void GraphicsWidget::drawWidget() {
 
 #pragma mark -
 
+CoverArtWidget::CoverArtWidget(GuiObject *boss, int x, int y, int w, int h, const char *tooltip, int number, uint32 cmd)
+	: GraphicsWidget(boss, x, y, w, h, tooltip), CommandSender(boss), _number(number), _cmd(cmd) {
+	setFlags(WIDGET_ENABLED | WIDGET_CLEARBG);
+	_type = kGraphicsWidget;
+	_selected = false;
+}
+
+CoverArtWidget::CoverArtWidget(GuiObject *boss, const Common::String &name, const char *tooltip, int number, uint32 cmd)
+	: GraphicsWidget(boss, name, tooltip), CommandSender(boss), _number(number), _cmd(cmd) {
+	setFlags(WIDGET_ENABLED | WIDGET_CLEARBG);
+	_type = kGraphicsWidget;
+	_selected = false;
+}
+
+void CoverArtWidget::drawWidget() {
+	if (_gfx.getPixels()) {
+		// Check whether the set up surface needs to be converted to the GUI
+		// color format.
+		const Graphics::PixelFormat &requiredFormat = g_gui.theme()->getPixelFormat();
+		if (_gfx.format != requiredFormat) {
+			_gfx.convertToInPlace(requiredFormat);
+		}
+
+		const int x = _x + (_w - _gfx.w) / 2;
+		const int y = _y + (_h - _gfx.h) / 2;
+
+		g_gui.theme()->drawSurface(Common::Rect(x, y, x + _gfx.w,  y + _gfx.h), _gfx, _state, _alpha, true, _drawableArea);
+	}
+}
+
+void CoverArtWidget::handleMouseDown(int x, int y, int button, int clickCount) {
+	sendCommand(_cmd, _number);
+}
+
+void CoverArtWidget::handleFingerUp(int x, int y, int button, int clickCount) {
+	sendCommand(_cmd, _number);
+}
+
+#pragma mark -
+
 ContainerWidget::ContainerWidget(GuiObject *boss, int x, int y, int w, int h) : Widget(boss, x, y, w, h) {
 	setFlags(WIDGET_ENABLED | WIDGET_CLEARBG);
 	_type = kContainerWidget;

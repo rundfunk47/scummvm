@@ -392,6 +392,30 @@ protected:
 	bool _transparency;
 };
 
+/* CoverArtWidget */
+class CoverArtWidget : public GraphicsWidget, public CommandSender {
+public:
+	CoverArtWidget(GuiObject *boss, int x, int y, int w, int h, const char *tooltip = 0, int number = 0, uint32 cmd = 0);
+	CoverArtWidget(GuiObject *boss, const Common::String &name, const char *tooltip = 0, int number = 0, uint32 cmd = 0);
+
+	void setNumber(int number) { _number = number; }
+	void setSelected(bool selected) { _selected = selected; }
+
+	int number() { return _number; }
+	bool selected() { return _selected; }
+	
+	void handleMouseDown(int x, int y, int button, int clickCount);
+	void handleFingerUp(int x, int y, int button, int clickCount);
+
+protected:
+	uint32	_cmd;
+
+	void drawWidget();
+	
+	bool _selected;
+	int _number;
+};
+
 /* ContainerWidget */
 class ContainerWidget : public Widget {
 public:

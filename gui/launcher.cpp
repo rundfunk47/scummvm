@@ -45,6 +45,7 @@
 #include "gui/saveload.h"
 #include "gui/widgets/edittext.h"
 #include "gui/widgets/list.h"
+#include "gui/widgets/grid.h"
 #include "gui/widgets/tab.h"
 #include "gui/widgets/popup.h"
 #include "gui/ThemeEval.h"
@@ -663,9 +664,13 @@ LauncherDialog::LauncherDialog()
 	_searchClearButton = addClearButton(this, "Launcher.SearchClearButton", kSearchClearCmd);
 
 	// Add list with game titles
+#ifndef LAUNCHER_GRID
 	_list = new ListWidget(this, "Launcher.GameList", 0, kListSearchCmd);
 	_list->setEditable(false);
 	_list->setNumberingMode(kListNumberingOff);
+#else
+	_grid = new GridWidget(this, "Launcher.GameList"); 
+#endif
 
 	// Populate the list
 	updateListing();
@@ -690,7 +695,11 @@ void LauncherDialog::selectTarget(const String &target) {
 		StringArray::const_iterator iter;
 		for (iter = _domains.begin(); iter != _domains.end(); ++iter, ++itemToSelect) {
 			if (target == *iter) {
+#ifndef LAUNCHER_GRID
 				_list->setSelected(itemToSelect);
+#else
+				_grid->setSelected(itemToSelect);
+#endif
 				break;
 			}
 		}
@@ -716,7 +725,12 @@ void LauncherDialog::open() {
 
 void LauncherDialog::close() {
 	// Save last selection
+
+#ifndef LAUNCHER_GRID
 	const int sel = _list->getSelected();
+#else
+	const int sel = _grid->getSelected();
+#endif
 	if (sel >= 0)
 		ConfMan.set("lastselectedgame", _domains[sel], ConfigManager::kApplicationDomain);
 	else
@@ -728,6 +742,9 @@ void LauncherDialog::close() {
 
 void LauncherDialog::updateListing() {
 	StringArray l;
+#ifdef LAUNCHER_GRID
+	StringArray limage;
+#endif
 
 	// Retrieve a list of all games defined in the config file
 	_domains.clear();
@@ -764,10 +781,14 @@ void LauncherDialog::updateListing() {
 			while (pos < size && (scumm_stricmp(description.c_str(), l[pos].c_str()) > 0))
 				pos++;
 			l.insert_at(pos, description);
+#ifdef LAUNCHER_GRID
+			limage.insert_at(pos, gameid);
+#endif
 			_domains.insert_at(pos, iter->_key);
 		}
 	}
 
+#ifndef LAUNCHER_GRID 
 	const int oldSel = _list->getSelected();
 	_list->setList(l);
 	if (oldSel < (int)l.size())
@@ -780,6 +801,20 @@ void LauncherDialog::updateListing() {
 	// Update the filter settings, those are lost when "setList"
 	// is called.
 	_list->setFilter(_searchWidget->getEditString());
+#else
+	const int oldSel = _grid->getSelected();
+	_grid->setGrid(l, limage);
+	if (oldSel < (int)l.size())
+		_grid->setSelected(oldSel);	// Restore the old selection
+	else if (oldSel != -1)
+		// Select the last entry if the list has been reduced
+		_grid->setSelected(_grid->getList().size() - 1);
+	updateButtons();
+
+	// Update the filter settings, those are lost when "setList"
+	// is called.
+	_grid->setFilter(_searchWidget->getEditString());
+#endif
 }
 
 void LauncherDialog::addGame() {
@@ -1061,8 +1096,13 @@ void LauncherDialog::handleKeyDown(Common::KeyState state) {
 	if (state.keycode == Common::KEYCODE_TAB) {
 		// Toggle between the game list and the quick search field.
 		if (getFocusWidget() == _searchWidget) {
+#ifndef LAUNCHER_GRID
 			setFocusWidget(_list);
 		} else if (getFocusWidget() == _list) {
+#else
+			setFocusWidget(_grid);
+		} else if (getFocusWidget() == _grid) {
+#endif
 			setFocusWidget(_searchWidget);
 		}
 	}
@@ -1076,7 +1116,11 @@ void LauncherDialog::handleKeyUp(Common::KeyState state) {
 }
 
 void LauncherDialog::handleCommand(CommandSender *sender, uint32 cmd, uint32 data) {
+#ifndef LAUNCHER_GRID
 	int item = _list->getSelected();
+#else
+	int item = _grid->getSelected();
+#endif
 
 	switch (cmd) {
 	case kAddGameCmd:
@@ -1122,12 +1166,20 @@ void LauncherDialog::handleCommand(CommandSender *sender, uint32 cmd, uint32 dat
 		break;
 	case kSearchCmd:
 		// Update the active search filter.
+#ifndef LAUNCHER_GRID
 		_list->setFilter(_searchWidget->getEditString());
+#else
+		_grid->setFilter(_searchWidget->getEditString());
+#endif
 		break;
 	case kSearchClearCmd:
 		// Reset the active search filter, thus showing all games again
 		_searchWidget->setEditString("");
+#ifndef LAUNCHER_GRID
 		_list->setFilter("");
+#else
+		_grid->setFilter("");
+#endif
 		break;
 	default:
 		Dialog::handleCommand(sender, cmd, data);
@@ -1135,7 +1187,11 @@ void LauncherDialog::handleCommand(CommandSender *sender, uint32 cmd, uint32 dat
 }
 
 void LauncherDialog::updateButtons() {
+#ifndef LAUNCHER_GRID
 	bool enable = (_list->getSelected() >= 0);
+#else
+	bool enable = (_grid->getSelected() >= 0);
+#endif
 	if (enable != _startButton->isEnabled()) {
 		_startButton->setEnabled(enable);
 		_startButton->draw();
@@ -1149,7 +1205,11 @@ void LauncherDialog::updateButtons() {
 		_removeButton->draw();
 	}
 
+#ifndef LAUNCHER_GRID
 	int item = _list->getSelected();
+#else
+	int item = _grid->getSelected();
+#endif
 	bool en = enable;
 
 	if (item >= 0)

@@ -27,6 +27,7 @@ MODULE_OBJS := \
 	widgets/canvas.o \
 	widgets/editable.o \
 	widgets/edittext.o \
+	widgets/grid.o \
 	widgets/list.o \
 	widgets/popup.o \
 	widgets/scrollbar.o \
