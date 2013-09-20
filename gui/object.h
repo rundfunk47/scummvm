@@ -88,6 +88,7 @@ public:
 	virtual uint16	getHeight() const	{ return _h; }
 
 	virtual bool	isVisible() const = 0;
+	virtual bool	hasDrawableArea() { return !_drawableArea.isEmpty(); }
 
 	virtual void	draw() = 0;
 
