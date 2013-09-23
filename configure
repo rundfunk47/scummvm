@@ -142,6 +142,7 @@ _bink=yes
 # Default vkeybd/keymapper/eventrec options
 _vkeybd=no
 _keymapper=no
+_touchmapper=no
 _eventrec=auto
 # GUI translation options
 _translation=yes
@@ -1047,6 +1048,8 @@ for ac_option in $@; do
 	--disable-vkeybd)         _vkeybd=no      ;;
 	--enable-keymapper)       _keymapper=yes  ;;
 	--disable-keymapper)      _keymapper=no   ;;
+	--enable-touchmapper)     _touchmapper=yes  ;;
+	--disable-touchmapper)    _touchmapper=no   ;;
 	--enable-eventrecorder)   _eventrec=yes  ;;
 	--disable-eventrecorder)  _eventrec=no   ;;
 	--enable-text-console)    _text_console=yes ;;
@@ -2320,6 +2323,7 @@ if test -n "$_host"; then
 			_seq_midi=no
 			_mt32emu=no
 			_timidity=no
+			_touchmapper=yes
 			;;
 		arm-linux|arm*-linux-gnueabi|arm-*-linux)
 			;;
@@ -3860,6 +3864,7 @@ define_in_config_if_yes $_nasm 'USE_NASM'
 #
 define_in_config_if_yes $_vkeybd 'ENABLE_VKEYBD'
 define_in_config_if_yes $_keymapper 'ENABLE_KEYMAPPER'
+define_in_config_if_yes $_touchmapper 'ENABLE_TOUCHMAPPER'
 define_in_config_if_yes $_eventrec 'ENABLE_EVENTRECORDER'
 
 #
@@ -4024,6 +4029,10 @@ fi
 
 if test "$_keymapper" = yes ; then
 	echo_n ", keymapper"
+fi
+
+if test "$_touchmapper" = yes ; then
+	echo_n ", touchmapper"
 fi
 
 if test "$_eventrec" = yes ; then
