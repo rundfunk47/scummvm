@@ -825,7 +825,8 @@ void ThemeEngine::queueDD(DrawData type, const Common::Rect &r, uint32 dynamic, 
 		return;
 
 	Common::Rect area = r;
-	area.clip(_screen.w, _screen.h);
+	if (drawableArea.isEmpty())
+		area.clip(_screen.w, _screen.h);
 
 	ThemeItemDrawData *q = new ThemeItemDrawData(this, _widgets[type], area, dynamic, drawableArea);
 
@@ -851,7 +852,8 @@ void ThemeEngine::queueDDText(TextData type, TextColor color, const Common::Rect
 		return;
 
 	Common::Rect area = r;
-	area.clip(_screen.w, _screen.h);
+	if (drawableTextArea.isEmpty())
+		area.clip(_screen.w, _screen.h);
 
 	ThemeItemTextData *q = new ThemeItemTextData(this, _texts[type], _textColors[color], area, drawableTextArea, text, alignH, alignV, ellipsis, restoreBg, deltax);
 
@@ -866,7 +868,8 @@ void ThemeEngine::queueDDText(TextData type, TextColor color, const Common::Rect
 void ThemeEngine::queueBitmap(const Graphics::Surface *bitmap, const Common::Rect &r, bool alpha, const Common::Rect &drawableArea) {
 
 	Common::Rect area = r;
-	area.clip(_screen.w, _screen.h);
+	if (drawableArea.isEmpty())
+		area.clip(_screen.w, _screen.h);
 
 	ThemeItemBitmap *q = new ThemeItemBitmap(this, area, bitmap, alpha, drawableArea);
 
